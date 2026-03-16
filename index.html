@@ -1029,7 +1029,7 @@ function drawPond(dt){
     CTX.fillText(f.zone,f.x,f.y-r-3);
     CTX.globalAlpha=1; CTX.textAlign='left';
   }
-  // Hover cursor hint when idle — show a subtle cursor circle following mouse over water
+  // Hover cursor hint when idle
   if(G.phase==='idle'&&G._hoverX!==undefined){
     const hx=G._hoverX,hy=G._hoverY;
     const wx2=W*.5,wy2=H*.45,wrx2=W*.35,wry2=H*.3;
@@ -1045,6 +1045,8 @@ function drawPond(dt){
     }
   }
 }
+
+function drawDock(W,H){
   const dx=W*.44,dy=H*.63,dw=W*.13,dh=H*.024;
   CTX.fillStyle='#8b6b42';CTX.beginPath();CTX.roundRect(dx,dy,dw,dh,3);CTX.fill();
   CTX.fillStyle='#a07848';CTX.fillRect(dx-.01*W,dy-.005*H,dw+.02*W,dh*.35);
@@ -1053,7 +1055,7 @@ function drawPond(dt){
   CTX.fillRect(dx+dw*.8,dy+dh,dw*.08,H*.06);
   CTX.strokeStyle='#6b4423';CTX.lineWidth=1;
   for(let i=1;i<5;i++){CTX.beginPath();CTX.moveTo(dx+dw*i*.2,dy);CTX.lineTo(dx+dw*i*.2,dy+dh);CTX.stroke();}
-
+}
 
 function drawFisherman(W,H){
   const fx=W*.47,fy=H*.62;
