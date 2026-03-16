@@ -453,7 +453,7 @@ const FISH=[
   // SECRET — hidden until note found
   {id:'mguppy',     em:'🌙',name:'Moonveil Guppy',    rar:'secret',    price:2000,mn:.12,mx:.18, bio:['pond','clake','temple','sacred'],tm:['midnight'],sc:'fullmoon',  desc:'Glows faintly under moonlight.',         info:'Only during a full moon at midnight. Most anglers never know it exists.',  note:{bio:['pond','clake','temple','sacred'],clue:"The water shimmers strangely on moonlit nights... something tiny dances at the surface when the moon is full and the clock strikes twelve."}},
   {id:'ptuna',      em:'🐟',name:'Phantom Tuna',      rar:'secret',    price:3000,mn:50, mx:60,  bio:['deepocean','coastal'],    tm:[...TD,...TN,...TDW],sc:'fifty',   desc:'Appears as a ripple before suddenly striking.',   info:'After catching 50 fish in a row without leaving.',                         note:{bio:['deepocean','coastal'],clue:"They say persistence in one place calls something ancient... the 50th shadow is not alone."}},
-  {id:'cwcarp',     em:'⚙️',name:'Clockwork Carp',    rar:'secret',    price:2500,mn:3.4,mx:4.0, bio:['canal'],                  tm:['midnight'],sc:'threethirty', desc:'Metallic scales tick like a watch.',      info:'Catch a fish exactly at 3:33 AM game time.',                              note:{bio:['canal'],clue:"The old canal echoes with a ticking sound at an unusual hour. Something mechanical stirs in the murk."}},
+  {id:'cwcarp',     em:'⚙️',name:'Clockwork Carp',    rar:'secret',    price:2500,mn:3.4,mx:4.0, bio:['canal'],                  tm:['midnight'],sc:'brokenwatch', desc:'Metallic scales tick softly like a wound watch.',      info:'Only bites between 3 AM and 4 AM while using a Broken Watch as bait. Fish up the watch with Magnet Bait.',              note:{bio:['canal'],clue:"The old canal echoes with a ticking sound in the small hours. Something mechanical stirs in the murk — perhaps drawn to a familiar sound."}},
   {id:'rserpent',   em:'🌈',name:'Rainbow Serpent Fry',rar:'secret',   price:1800,mn:.8, mx:1.0, bio:['falls'],                  tm:[...TD,...TDW],sc:'rainrainbow', desc:'Juvenile of a mythical creature.',       info:'During rain while a rainbow is visible.',                                  note:{bio:['falls'],clue:"When rain falls at the waterfall pools and the sky breaks open with colour, something mythic stirs beneath."}},
   // BOSS
   {id:'tkraken',    em:'🦑',name:'Tempest Kraken',    rar:'boss',      price:0,   mn:1100,mx:1200,bio:['deepocean'],             tm:[...TN,...TDW],bossEvt:'storm_boss',rodReq:'tides',   desc:'Sea titan emerges during violent storms.',       info:'Event: Massive storm. Requires Rod of Tides. Reward: Kraken Ink.',   reward:{n:'Kraken Ink',t:'mat'},    breakRod:true},
@@ -490,6 +490,50 @@ const FISH=[
   {id:'pguppy',     em:'✨',name:'Prism Guppy',         rar:'secret',   price:2200,mn:.09,mx:.09,  bio:['clake'],                 tm:['noon'], sc:'noon_rainbow', desc:'Tiny body refracts sunlight into dazzling rainbow colours.',info:'Active only at noon during a rainbow. Most anglers mistake it for a reflection.', note:{bio:['clake'],clue:"At the clearest lake, when noon light meets rain, the water itself seems to dance in colour. Something tiny hides within the shimmer."}},
   {id:'gvcatfish',  em:'🐡',name:'Gravestone Catfish',  rar:'secret',   price:2800,mn:16, mx:20,   bio:['swamp','river'],         tm:['midnight'],sc:'still_midnight',desc:'Pale catfish lurking beneath forgotten river crossings.',info:'Appears only when the river is perfectly still at midnight.',            note:{bio:['swamp','river'],clue:"Old rivermen say that when the swamp holds its breath and the moon is high, something pale drifts beneath the ancient crossing stones."}},
   {id:'mmackerel',  em:'🐟',name:'Mirage Mackerel',     rar:'secret',   price:2400,mn:4.1,mx:5.4,  bio:['coastal'],               tm:['noon'], sc:'noon_heat',  desc:'Seen darting across the water like a mirage.',         info:'Only during extreme heat at noon. Many anglers believe they imagined it.',       note:{bio:['coastal'],clue:"When the ocean shimmers with heat and even the air seems to melt, something flickers across the surface. Blink and it is gone."}},
+  // ── ADDITIONAL COMMON ──
+  {id:'mudcrawler', em:'🐡',name:'Mud Crawler',          rar:'common',   price:6,   mn:.3, mx:.8,  bio:['swamp','river'],          tm:[...TD,...TN],desc:'A squat, brownish fish that lurks in muddy shallows.',info:'Bottom-dweller. Almost always found in pairs. Easy to catch but unpleasant to handle.'},
+  {id:'tinyfin',    em:'🐟',name:'Tinyfin Minnow',       rar:'common',   price:4,   mn:.06,mx:.12, bio:['pond','clake'],           tm:TD,           desc:'Barely bigger than a finger. Found in almost every pond.',info:'Schools of thousands. Often used as live bait by experienced anglers.'},
+  {id:'pondroach',  em:'🐠',name:'Pond Roach',           rar:'common',   price:7,   mn:.4, mx:1.1, bio:['pond','river','canal'],   tm:[...TD,...TDW],desc:'A hardy fish that thrives in still or slow-moving water.',info:'Tolerates murky conditions. The last fish to leave a drying pond.'},
+  {id:'saltgoby',   em:'🐡',name:'Salt Goby',            rar:'common',   price:9,   mn:.2, mx:.5,  bio:['coastal','harbor'],       tm:TD,           desc:'A small bottom-hugging goby found on rocky coastal floors.',info:'Nearly invisible against sand. Darts into crevices when spooked.'},
+  {id:'pebbleback', em:'🐟',name:'Pebbleback Dace',      rar:'common',   price:5,   mn:.15,mx:.4,  bio:['mtnriver','river'],       tm:TD,           desc:'Speckled like river stones. Expert at camouflage.',   info:'Thrives in fast currents. Its pebble-pattern scales are a perfect disguise.'},
+  // ── ADDITIONAL UNCOMMON ──
+  {id:'velvetcarp', em:'🐟',name:'Velvet Carp',          rar:'uncommon', price:38,  mn:3.0,mx:6.0, bio:['pond','temple'],          tm:[...TD,...TDW],desc:'Deep purple-brown scales with a velvety sheen.',    info:'Rarely ventures into open water. Hides beneath overhanging vegetation.'},
+  {id:'lanternfish', em:'🐡',name:'Cave Lanternfish',    rar:'uncommon', price:42,  mn:1.2,mx:2.4, bio:['trench','canal'],         tm:TN,           desc:'A pale fish with a tiny glowing spot on its forehead.',info:'Adapted to complete darkness. Its bioluminescent spot lures tiny prey.'},
+  {id:'spinyperch', em:'🐠',name:'Spiny Perch',          rar:'uncommon', price:30,  mn:1.8,mx:3.5, bio:['river','clake'],          tm:[...TD,...TDW],desc:'Bristling dorsal spines make it painful to mishandle.',info:'Territorial and aggressive. Will strike at anything that invades its patch.'},
+  {id:'swampray',   em:'🐡',name:'Swamp Ray',            rar:'uncommon', price:45,  mn:2.5,mx:5.5, bio:['swamp'],                  tm:[...TD,...TN], desc:'A flat, gliding fish that hides beneath the mud.',    info:'Skims along the bottom like a shadow. Its barbed tail is a warning to anglers.'},
+  {id:'rivercopper',em:'🐠',name:'River Copperhead',     rar:'uncommon', price:35,  mn:2.0,mx:4.0, bio:['mtnriver','coldr'],       tm:[...TDW,...TD],desc:'A reddish-orange trout relative native to cold headwaters.',info:'Found only where water runs crystal clear and fast. Skittish and quick.'},
+  // ── ADDITIONAL RARE ──
+  {id:'emberbass',  em:'🐟',name:'Ember Bass',           rar:'rare',     price:88,  mn:5.0,mx:8.0, bio:['pond','clake'],           tm:['evening','dusk'],desc:'Fiery orange and red flanks that glow at dusk.',    info:'Only feeds at the golden hour. Its colours deepen as the sun sets.'},
+  {id:'deepcoral',  em:'🐡',name:'Deep Coral Wrasse',    rar:'rare',     price:110, mn:3.5,mx:6.0, bio:['deepocean','coastal'],    tm:TD,           desc:'Impossibly vivid coral patterns across its body.',    info:'Navigates reefs by colour recognition. A prized catch for any angler.'},
+  {id:'voideel',    em:'🟢',name:'Void Eel',             rar:'rare',     price:95,  mn:4.0,mx:7.5, bio:['trench','harbor'],        tm:TN,           desc:'Jet black with faint violet edges. Nearly invisible at depth.',info:'Moves without disturbing the water. Its presence is felt before it is seen.'},
+  {id:'tiderunner', em:'🐠',name:'Tiderunner Mackerel',  rar:'rare',     price:80,  mn:4.5,mx:7.0, bio:['coastal'],                tm:[...TDW,...TD],desc:'Rides the incoming tide at high speed, leaping clear of the water.',info:'Chases baitfish schools with precision. Hooks itself through sheer aggression.'},
+  {id:'ashtrout',   em:'🐟',name:'Ash Trout',            rar:'rare',     price:85,  mn:3.8,mx:6.2, bio:['frozen','coldr'],         tm:[...TDW,'morning'],desc:'Pale as ash with silver-veined fins. Found under ice.',info:'Survives near-freezing water by slowing its metabolism to a crawl.'},
+  // ── ADDITIONAL EPIC ──
+  {id:'prismbass',  em:'🐠',name:'Prism Bass',           rar:'epic',     price:320, mn:28, mx:42,  bio:['sacred','clake'],         tm:TD,           desc:'Every scale splits light into a miniature rainbow.',   info:'Found only in pristine sacred waters. Scientists cannot explain its optical properties.'},
+  {id:'colossalcat',em:'🐡',name:'Colossal Catfish',     rar:'epic',     price:280, mn:45, mx:68,  bio:['swamp','deepocean'],      tm:TN,           desc:'The grandfather of all catfish. Ancient and enormous.',info:'Lives for decades in the deepest holes. Its whiskers alone can span a metre.'},
+  {id:'abyssray',   em:'🐡',name:'Abyss Ray',            rar:'epic',     price:340, mn:60, mx:90,  bio:['deepocean','trench'],     tm:[...TN,...TDW],desc:'A massive flat predator that drifts silently through deep water.',info:'Wings spanning two metres. Generates a mild electrical field to stun prey.'},
+  {id:'ironjaw',    em:'🐟',name:'Ironjaw Grouper',      rar:'epic',     price:295, mn:40, mx:58,  bio:['coastal','harbor'],       tm:[...TD,...TDW],desc:'Its jaw can crush shellfish with ease — and will test your line.',info:'Ambush predator. Lurks motionless for hours then strikes with incredible force.'},
+  // ── ADDITIONAL LEGENDARY ──
+  {id:'voidkraken', em:'🦑',name:'Void Krait',           rar:'legendary',price:1600,mn:300,mx:380, bio:['trench'],                 tm:['midnight'],  desc:'A serpentine creature from the absolute depth. Almost mythical.',info:'No confirmed catches exist on record. Its body absorbs light rather than reflecting it.'},
+  {id:'crystalwhale',em:'🐳',name:'Crystal Whale Shark', rar:'legendary',price:2000,mn:800,mx:1000,bio:['deepocean'],              tm:['noon'],      desc:'A gentle giant with crystalline spotted skin.',        info:'Despite its size it is completely docile. Only the lightest touch on the line will hold it.'},
+  {id:'tidalmanta', em:'🐟',name:'Tidal Manta',          rar:'legendary',price:1800,mn:500,mx:650, bio:['coastal','deepocean'],    tm:[...TDW,...TD],desc:'An enormous manta ray that rides the boundary between tides.',info:'Appears only where two currents meet. Its wingspan creates visible whirlpools.'},
+  {id:'solarbream', em:'🐠',name:'Solar Bream',          rar:'legendary',price:1500,mn:180,mx:240, bio:['sacred','temple'],        tm:['noon'],      desc:'Its scales are hot to the touch and glow like embers at noon.',info:'Absorbs sunlight directly. Ancient texts describe it as a fish born from a fallen star.'},
+  // ── NEW LEGENDARY ──
+  {id:'sfmarlin2',  em:'🐟',name:'Solarflare Marlin',    rar:'legendary',price:1600,mn:236,mx:263, bio:['deepocean','coastal'],    tm:['noon'],      desc:'Blazing orange fins shimmer under direct sunlight. One of the fastest fish in the sea.',info:'Only at high noon on the open ocean. Its speed is legendary — it hits the line like a thunderbolt.'},
+  {id:'mssturgeon', em:'🐡',name:'Moonshadow Sturgeon',  rar:'legendary',price:1200,mn:118,mx:141, bio:['coldr'],                  tm:TN,            sc:'fullmoon_night', desc:'Massive ancient sturgeon gliding like a shadow under moonlight.',info:'Appears only on full moon nights in cold rivers. Its dark form is nearly invisible beneath the surface.'},
+  {id:'tmbarracuda',em:'🐠',name:'Tempest Barracuda',    rar:'legendary',price:1300,mn:86, mx:104,  bio:['coastal'],                tm:['storm'],     wx:'storm',          desc:'A violent predator that becomes aggressive when lightning cracks across the sky.',info:'Charges wildly during storms. Its speed doubles in rough water.'},
+  {id:'gflevcarp',  em:'🐟',name:'Glassfin Levi Carp',   rar:'legendary',price:1100,mn:127,mx:154,  bio:['clake','pond','frozen'],  tm:TD,            wx:'clear',          desc:'Crystal-clear fins make it appear almost invisible beneath calm waters.',info:'Only in clear weather on calm days. Its transparent body bends light making it nearly undetectable.'},
+  {id:'frcrpike',   em:'🐟',name:'Frost Crown Pike',     rar:'legendary',price:1400,mn:95, mx:113,  bio:['frozen','coldr'],         tm:TN,            wx:'snow',           desc:'An enormous pike with ice-covered scales that sharpen like blades in freezing winds.',info:'Only during blizzard/snowfall at night. Its scales rattle softly in the cold like breaking ice.'},
+  {id:'nftuna',     em:'🐡',name:'Nightfall Tuna',       rar:'legendary',price:1350,mn:172,mx:195,  bio:['deepocean','coastal'],   tm:['dusk','evening'],sc:'ten_area',   desc:'A powerful tuna that appears as the ocean darkens and the daytime catch ends.',info:'Appears only after catching 10 fish in the same area at dusk or evening. Requires patience.'},
+  {id:'celestray',  em:'🐠',name:'Celestial Ray',        rar:'legendary',price:1500,mn:136,mx:159,  bio:['deepocean'],              tm:['midnight'],  wx:'clear',          desc:'A glowing ray whose wings shimmer like constellations.',info:'Only at midnight under clear skies. Its wing pattern exactly mirrors the night sky above it.'},
+  {id:'amosscarp',  em:'🐡',name:'Ancient Moss Carp',    rar:'legendary',price:1050,mn:109,mx:127,  bio:['swamp','river'],          tm:['morning'],   sc:'after_rain',     desc:'Covered in algae and moss, it looks more like a floating log than a fish.',info:'Only in the morning after rain. It has been growing its algae coat for decades.'},
+  // ── NEW SECRET ──
+  {id:'wkoi',       em:'🐠',name:'Whispering Koi',       rar:'secret',   price:3200,mn:6.4,mx:8.2, bio:['clake','sacred','temple'],tm:['midnight'],  sc:'idle_60',        desc:'This silent koi only appears when the water is perfectly undisturbed.',info:'Do not cast for 60 seconds — then cast once. It rewards patient anglers who resist the urge.',           note:{bio:['clake','sacred','temple'],clue:"The lake falls perfectly still in the small hours. Something notices when you stop disturbing the water. Wait."}},
+  {id:'ssardine',   em:'🐟',name:'Starfall Sardine',     rar:'secret',   price:2800,mn:.18,mx:.18,  bio:['coastal'],                tm:TN,            sc:'meteor_event',   desc:'A shimmering fish that appears when streaks of light cross the night sky.',info:'Only during the Meteor Impact world event at night.',                                                     note:{bio:['coastal'],clue:"When the sky falls into the sea at night, something rises from below to meet it. Tiny and brilliant."}},
+  {id:'mircarp',    em:'🐟',name:'Mirror Carp',          rar:'secret',   price:3000,mn:10, mx:12.7, bio:['clake','pond','frozen'],  tm:TD,            sc:'three_different',desc:'Its scales reflect the surrounding water like a mirror, making it difficult to spot.',info:'Catch 3 different fish species in a row without repeating.',                                              note:{bio:['clake','pond'],clue:"It mimics the patterns of other fish. Only after you have shown true variety does it feel safe to approach."}},
+  {id:'lanteel',    em:'🟢',name:'Lantern Eel',          rar:'secret',   price:2600,mn:5.0,mx:6.8, bio:['trench','canal'],         tm:TN,            sc:'glowbait',       desc:'A long eel that follows light sources through dark waters.',info:'Requires active Glowing Bait during night fishing. The light draws it up from the dark.',                    note:{bio:['trench','canal'],clue:"In the deepest darkness something follows light. Bring your own glow to the dark water and wait."}},
+  {id:'kccarp',     em:'🐠',name:'King\'s Coin Carp',    rar:'secret',   price:3500,mn:15.9,mx:18.1,bio:['temple','clake'],        tm:['dusk','evening'],sc:'golden_koi_caught',desc:'Said to appear only when fortune favors the angler.',info:'Catch a Golden Koi first, then fish at dusk or evening in temple ponds or calm lakes.',                  note:{bio:['temple','clake'],clue:"The old monks say: catch the gold first. Then at twilight, something even rarer answers the call of fortune."}},
+  {id:'echopike',   em:'🐟',name:'Echo Pike',            rar:'secret',   price:3100,mn:22.7,mx:29.5,bio:['mtnriver'],              tm:TDW,           sc:'same_spot_5',    desc:'A territorial predator that only attacks persistent anglers.',info:'Cast in the same Mountain River spot 5 times in a row without travelling away.',                            note:{bio:['mtnriver'],clue:"The mountain pike remembers faces. Return to the same cold bend five times at dawn and it will finally challenge you."}},
 ];
 
 const RODS=[
@@ -524,6 +568,8 @@ const CATITEMS=[
   {id:'rbait',   em:'🌈',name:'Prismatic Bait',  desc:'Next catch guaranteed Rare+!', fx:'force_rare',val:true,  price:300},
   {id:'luck',    em:'🍀',name:'Lucky Clover',    desc:'Doubles luck for 5 min.',      fx:'luck',   val:300,      price:200},
   {id:'moon',    em:'🌕',name:'Moon Mirror',     desc:'Triggers full moon briefly.',  fx:'fullmoon',val:true,   price:500},
+  {id:'magnet',  em:'🧲',name:'Magnet Bait',     desc:'Fish up metallic items from the water (single use). May yield a Broken Watch.',fx:'magnet',val:true,price:250},
+  {id:'glowbait',em:'💡',name:'Glowing Bait',    desc:'Attracts light-sensitive fish. Enables Lantern Eel.',fx:'glowbait',val:true,price:200},
 ];
 
 const WEVENTS=[
@@ -621,6 +667,15 @@ const COMMANDS={
   '/biomestreak':{desc:'Show all biome catch streaks.',               fn:()=>{const s=Object.entries(G.biomeStreak).map(([k,v])=>`${BIOMES.find(b=>b.id===k)?.name||k}:${v}`).join(' | ');clog('📍 Biome streaks: '+(s||'None'),'info');}},
   '/resetstreak':{desc:'Reset current biome streak.',                 fn:()=>{G.biomeStreak[G.biome]=0;clog('♻️ Streak reset.','ok');}},
   '/identify':   {desc:'Identify current fish on line.',              fn:()=>{if(curFish)clog('🔎 On line: '+curFish.name+' ('+curFish.rar+')','info');else clog('No fish on the line.','warn');}},
+  // Force / cheat commands
+  '/forcenext':  {desc:'Force next catch to specific fish. Usage: /forcenext bass',  fn:(a)=>forceNextCmd(a)},
+  '/forcerare':  {desc:'Next catch guaranteed Rare or better.',       fn:()=>{G.forceRare=true;clog('🌟 Next catch will be Rare+!','ok');}},
+  '/forcemod':   {desc:'Force modifier on next catch. Usage: /forcemod golden',      fn:(a)=>forceModCmd(a)},
+  '/cancelforce':{desc:'Cancel any forced next fish.',                fn:()=>{G.forceNextFish=null;G.forceRare=false;G.forceMod=null;clog('✖ Force cancelled.','ok');}},
+  '/listfish':   {desc:'List all fish IDs (for use with /forcenext)',fn:()=>listAllFishCmd()},
+  '/searchfish': {desc:'Search fish by name. Usage: /searchfish trout',fn:(a)=>searchFishCmd(a)},
+  '/rarity':     {desc:'Show catch odds for current rod/biome.',      fn:()=>rarityCmd()},
+  '/spawn':      {desc:'Instantly trigger a bite (debug).',           fn:()=>{if(G.phase==='idle'){castLine();setTimeout(()=>triggerBite(),100);}else clog('Already fishing.','warn');}},
 };
 
 // ═══════════════════════════════════════════════
@@ -651,6 +706,15 @@ const G={
   fullMoon:false,
   luckTimer:0,
   forceRare:false,
+  forceNextFish:null,
+  forceMod:null,
+  hasBrokenWatch:false,  // fished up via magnet bait
+  hasGlowBait:false,     // active glowing bait flag
+  glowBaitTimer:0,
+  idleTime:0,            // seconds idle in biome (Whispering Koi)
+  sameSpotCasts:0,       // casts without biome change (Echo Pike)
+  lastCatchIds:[],       // last 3 fish IDs caught (Mirror Carp 3-different)
+  caughtGoldenKoi:false, // ever caught Golden Koi (King's Coin Carp)
   mats:{},
   cfilt:'all',
   seed:Math.floor(Math.random()*99999),
@@ -1081,6 +1145,10 @@ function startTick(){
 
     // Luck timer
     if(G.luckTimer>0)G.luckTimer--;
+    if(G.glowBaitTimer>0){G.glowBaitTimer--;if(G.glowBaitTimer<=0){G.hasGlowBait=false;toast('💡 Glowing Bait wore off.');}}
+    // Track idle time in biome (for Whispering Koi — no cast for 60s)
+    if(G.phase==='idle'){G.idleTime=(G.idleTime||0)+1;}
+    else{G.idleTime=0;}
 
     // Eclipse countdown
     if(G.eclipseTimer>0){G.eclipseTimer--;if(G.eclipseTimer<=0)G.eclipse=false;}
@@ -1114,6 +1182,8 @@ function castLine(){
   const bi=G.biomes[G.biome];
   if(!bi?.lic&&!G.upg.glic){toast('⚠️ You need a fishing licence here!');return;}
   G.phase='waiting';
+  G.sameSpotCasts++;  // track consecutive casts in same spot
+  G.idleTime=0;       // reset idle on cast
   const cb=document.getElementById('castbtn');
   cb.disabled=true; cb.textContent='🎣 Line in water...';
   document.getElementById('wmsg').classList.add('on');
@@ -1188,26 +1258,23 @@ let trackRAF=null;
 let trackTO=null;
 let trackReturnTO=null;
 // Track physics
-let targetX=170;    // big circle X position on track
-let targetVx=0;     // big circle velocity
-let targetTx=170;   // big circle target destination
-let playerX=170;    // small circle X
-let playerVx=0;     // small circle velocity
-let playerAx=0;     // random jerk applied to player
-let trackShake={x:0,y:0}; // bar shake offset
+let targetX=170;
+let targetVx=0;
+let targetTx=170;
+let playerX=170;
+let playerVx=0;
+let playerAx=0;
+let trackShake={x:0,y:0};
 let trackShakeTime=0;
-let trackInsideTime=0;  // continuous time inside
-let trackOutsideTime=0; // continuous time outside
-// Config set per fish
-let TC={
-  barW:340, barH:60,
-  targetR:28, playerR:9,
-  targetSpd:1.2, targetWander:0.018,
-  playerJerk:0.8,
-  shakeMag:0, shakeFreq:0,
-  duration:4000,  // how long track phase lasts (ms)
-  moveTarget:false, // big circle wanders for especially rare fish
-};
+let trackInsideTime=0;
+let trackOutsideTime=0;
+// Player input state
+let trackDragging=false;
+let trackDragOffsetX=0;
+let trackArrowLeft=false;
+let trackArrowRight=false;
+let trackPlayerControlled=false; // true when player is actively controlling
+let TC={barW:340,barH:60,targetR:28,playerR:9,targetSpd:1.2,targetWander:0.018,playerJerk:0.8,shakeMag:0,shakeFreq:0,duration:4000,moveTarget:false};
 
 function getTrackConfig(){
   const rarW={common:0,uncommon:1,rare:2,epic:3,legendary:4,boss:5,secret:3}[curFish.rar]||0;
@@ -1246,16 +1313,60 @@ function showTrack(){
 
   // Init positions
   targetX=TC.barW/2;
-  targetVx=(Math.random()<.5?1:-1)*(TC.targetSpd*0.5);
-  targetTx=TC.barW/2+(Math.random()-.5)*(TC.barW*0.4);
+  targetVx=0;
+  targetTx=TC.barW/2;
+  TC._leapTimer=0; // trigger first leap immediately
   playerX=TC.barW/2+(Math.random()-.5)*40;
   playerVx=0; playerAx=0;
   trackInsideTime=0; trackOutsideTime=0;
   trackShakeTime=0;
 
-  // Update label
+  // Update label with controls hint
   const intensity=['common','uncommon'].includes(curFish.rar)?'Hold steady!':['rare','epic'].includes(curFish.rar)?'It\'s fighting hard!':'⚠️ Massive resistance!';
-  document.getElementById('track-label').textContent=intensity;
+  document.getElementById('track-label').textContent=intensity+' — Drag 🖱️ or Arrow keys ⬅️➡️';
+
+  // Attach input handlers to the canvas
+  const cv2=document.getElementById('track-canvas');
+  // Remove old listeners by cloning
+  const cv2New=cv2.cloneNode(true);
+  cv2.parentNode.replaceChild(cv2New,cv2);
+  const cv3=document.getElementById('track-canvas');
+
+  function getCanvasX(e){
+    const r=cv3.getBoundingClientRect();
+    const scaleX=cv3.width/r.width;
+    const clientX=e.touches?e.touches[0].clientX:e.clientX;
+    return (clientX-r.left)*scaleX;
+  }
+  function startDrag(e){
+    e.preventDefault();
+    const cx=getCanvasX(e);
+    if(Math.abs(cx-playerX)<TC.playerR*2.5){
+      trackDragging=true;
+      trackDragOffsetX=cx-playerX;
+    }
+  }
+  function moveDrag(e){
+    if(!trackDragging)return;
+    e.preventDefault();
+    const cx=getCanvasX(e);
+    playerX=Math.max(TC.playerR+2,Math.min(TC.barW-TC.playerR-2,cx-trackDragOffsetX));
+  }
+  function endDrag(){trackDragging=false;}
+
+  cv3.addEventListener('mousedown',startDrag);
+  cv3.addEventListener('mousemove',moveDrag);
+  cv3.addEventListener('mouseup',endDrag);
+  cv3.addEventListener('mouseleave',endDrag);
+  cv3.addEventListener('touchstart',startDrag,{passive:false});
+  cv3.addEventListener('touchmove',moveDrag,{passive:false});
+  cv3.addEventListener('touchend',endDrag);
+  cv3.style.cursor='grab';
+
+  // Reset input state
+  trackDragging=false;
+  trackArrowLeft=false;
+  trackArrowRight=false;
 
   // Start canvas loop
   if(trackRAF)cancelAnimationFrame(trackRAF);
@@ -1271,11 +1382,14 @@ function hideTrack(){
   trackActive=false;
   if(trackRAF){cancelAnimationFrame(trackRAF);trackRAF=null;}
   clearTimeout(trackTO);
+  trackDragging=false;
+  trackArrowLeft=false;
+  trackArrowRight=false;
   document.getElementById('track-wrap').style.display='none';
   document.getElementById('ring-wrap').style.display='';
   document.getElementById('track-status').textContent='';
   // Schedule possible return to track
-  const reReq={common:0,uncommon:.12,rare:.35,epic:.55,legendary:.72,boss:.85,secret:.45}[curFish.rar]||0;
+  const reReq={common:0,uncommon:.12,rare:.35,epic:.55,legendary:.72,boss:.85,secret:.45}[curFish?.rar]||0;
   clearTimeout(trackReturnTO);
   if(Math.random()<reReq&&G.phase==='reeling'){
     const delay=2000+Math.random()*3000;
@@ -1300,30 +1414,64 @@ function drawTrack(){
     to.style.transform=`translate(${trackShake.x.toFixed(1)}px,${trackShake.y.toFixed(1)}px)`;
   }
 
-  // Move big target circle along bar
-  if(TC.moveTarget){
-    // Wander to a target destination
-    if(Math.abs(targetX-targetTx)<15||Math.random()<TC.targetWander){
-      targetTx=TC.playerR+TC.targetR+(Math.random()*(W-2*(TC.playerR+TC.targetR)));
+  // Move big target circle — large infrequent leaps rather than constant glide
+  // Uses a timer to decide when to leap to a new position
+  if(!TC._leapTimer)TC._leapTimer=0;
+  TC._leapTimer-=dt;
+  if(TC._leapTimer<=0){
+    // Choose a new destination far from current position
+    const minDist=W*0.28; // leap at least 28% of bar width
+    let newX;
+    let tries=0;
+    do {
+      newX=TC.targetR+12+(Math.random()*(W-2*TC.targetR-24));
+      tries++;
+    } while(Math.abs(newX-targetX)<minDist&&tries<8);
+    targetTx=newX;
+    // Leap interval: slower for common/uncommon, faster for boss
+    const baseInterval={common:3.5,uncommon:2.8,rare:2.2,epic:1.6,legendary:1.1,boss:0.75,secret:1.8}[curFish?.rar||'common']||2;
+    TC._leapTimer=baseInterval*(0.7+Math.random()*0.6);
+    // For moveTarget fish, leap is instant (teleport-style snap)
+    if(TC.moveTarget){
+      targetX=targetTx;
+      targetVx=0;
     }
-    const diff=targetTx-targetX;
-    targetVx+=(diff>0?1:-1)*TC.targetSpd*0.08;
-    targetVx*=0.88;
-  } else {
-    // Bounce between walls
-    targetX+=targetVx;
-    if(targetX<TC.targetR+2){targetX=TC.targetR+2;targetVx=Math.abs(targetVx)*(0.8+Math.random()*.4);}
-    if(targetX>W-TC.targetR-2){targetX=W-TC.targetR-2;targetVx=-Math.abs(targetVx)*(0.8+Math.random()*.4);}
   }
-  if(TC.moveTarget){
+  // Smooth glide to destination (fast but not instant for non-moveTarget)
+  if(!TC.moveTarget){
+    const diff=targetTx-targetX;
+    const glideSpeed=TC.targetSpd*(TC.moveTarget?2:0.12);
+    targetVx+=Math.sign(diff)*glideSpeed;
+    targetVx*=0.84;
     targetX+=targetVx;
-    targetX=Math.max(TC.targetR+2,Math.min(W-TC.targetR-2,targetX));
+    // Bounce off walls
+    if(targetX<TC.targetR+4){targetX=TC.targetR+4;targetVx=Math.abs(targetVx);}
+    if(targetX>W-TC.targetR-4){targetX=W-TC.targetR-4;targetVx=-Math.abs(targetVx);}
+  } else {
+    targetX=Math.max(TC.targetR+4,Math.min(W-TC.targetR-4,targetX));
   }
 
-  // Player circle — drifts due to fish fighting
-  playerAx=(Math.random()-.5)*TC.playerJerk*2;
-  playerVx+=playerAx;
-  playerVx*=0.82;
+  // Track previous target position for leap flash
+  if(!TC._prevTargetX) TC._prevTargetX=targetX;
+  const leapOccurred=Math.abs(targetX-TC._prevTargetX)>W*0.2&&TC.moveTarget;
+  if(leapOccurred){TC._leapFlash=0.5;} // half-second flash
+  if(TC._leapFlash>0) TC._leapFlash-=dt;
+  TC._prevTargetX=targetX;
+  const fishJerk=(Math.random()-.5)*TC.playerJerk*1.2;
+  if(trackDragging){
+    // During drag: position is set directly by mouse, just add slight fish jerk
+    playerVx=fishJerk*0.3;
+    // playerX set by mouse event handler
+  } else if(trackArrowLeft||trackArrowRight){
+    // Arrow key control: accelerate in held direction, fish still adds jitter
+    const dir=(trackArrowLeft?-1:0)+(trackArrowRight?1:0);
+    playerVx+=dir*3.5+fishJerk*0.5;
+    playerVx*=0.78;
+  } else {
+    // No input — fish fully controls jerk
+    playerVx+=fishJerk;
+    playerVx*=0.82;
+  }
   playerX+=playerVx;
   playerX=Math.max(TC.playerR+2,Math.min(W-TC.playerR-2,playerX));
 
@@ -1336,7 +1484,6 @@ function drawTrack(){
   if(inside){
     trackInsideTime+=dt;
     trackOutsideTime=0;
-    // Gain progress slowly
     const gain=0.06*(1+rod.pw*.03)*lm;
     reelProg=Math.min(100,reelProg+gain);
     syncBars();
@@ -1344,11 +1491,11 @@ function drawTrack(){
   } else {
     trackOutsideTime+=dt;
     trackInsideTime=0;
-    // Lose progress
-    const loss=0.12*(1+({uncommon:.5,rare:1,epic:1.6,legendary:2.2,boss:3,secret:1.2}[curFish.rar]||0)*.04);
-    reelProg=Math.max(0,reelProg-loss);
+    // Much slower loss — only 0.02–0.06% per frame depending on rarity
+    const rarLoss={common:0.008,uncommon:0.015,rare:0.025,epic:0.038,legendary:0.052,boss:0.07,secret:0.03}[curFish?.rar||'common']||0.02;
+    reelProg=Math.max(0,reelProg-rarLoss);
     syncBars();
-    const urgency=trackOutsideTime>1.5?'⚠️ Getting away!':'↔️ Outside zone!';
+    const urgency=trackOutsideTime>2?'⚠️ Getting away!':trackOutsideTime>1?'↔️ Outside zone!':'↔️ Move into the circle!';
     document.getElementById('track-status').textContent=urgency;
   }
 
@@ -1388,16 +1535,42 @@ function drawTrack(){
   ctx2.fillStyle=tglow;
   ctx2.beginPath();ctx2.arc(targetX,barY,TC.targetR,0,Math.PI*2);ctx2.fill();
 
-  // Player circle
-  const pcol=inside?'#60f0a0':'#f0c040';
+  // Leap flash ring
+  if(TC._leapFlash>0){
+    const flashAlpha=TC._leapFlash*2;
+    ctx2.strokeStyle=`rgba(255,220,80,${Math.min(1,flashAlpha)})`;
+    ctx2.lineWidth=3;
+    ctx2.beginPath();ctx2.arc(targetX,barY,TC.targetR+8*(1-TC._leapFlash*2),0,Math.PI*2);ctx2.stroke();
+  }
+
+  // Player circle — colour shifts when actively controlled
+  const playerControlled=trackDragging||trackArrowLeft||trackArrowRight;
+  const pcol=inside?(playerControlled?'#80ffb0':'#60f0a0'):(playerControlled?'#ffd060':'#f0c040');
   ctx2.shadowColor=pcol;
-  ctx2.shadowBlur=inside?12:6;
+  ctx2.shadowBlur=inside?(playerControlled?20:12):(playerControlled?14:6);
   ctx2.fillStyle=pcol;
   ctx2.beginPath();ctx2.arc(playerX,barY,TC.playerR,0,Math.PI*2);ctx2.fill();
-  ctx2.strokeStyle='rgba(255,255,255,0.7)';
-  ctx2.lineWidth=1.5;
+  ctx2.strokeStyle=playerControlled?'rgba(255,255,255,0.95)':'rgba(255,255,255,0.7)';
+  ctx2.lineWidth=playerControlled?2:1.5;
   ctx2.beginPath();ctx2.arc(playerX,barY,TC.playerR,0,Math.PI*2);ctx2.stroke();
   ctx2.shadowBlur=0;
+
+  // Drag handle dot in centre of player circle
+  ctx2.fillStyle='rgba(255,255,255,0.6)';
+  ctx2.beginPath();ctx2.arc(playerX,barY,2.5,0,Math.PI*2);ctx2.fill();
+
+  // Arrow key directional indicator
+  if(trackArrowLeft||trackArrowRight){
+    ctx2.fillStyle='rgba(255,255,220,0.85)';
+    ctx2.font='bold 11px sans-serif';
+    ctx2.textAlign='center';
+    ctx2.textBaseline='middle';
+    ctx2.fillText(trackArrowLeft?'◀':'▶',playerX,barY-TC.playerR-8);
+  }
+
+  // Update cursor style based on drag state
+  const cv_el=document.getElementById('track-canvas');
+  if(cv_el) cv_el.style.cursor=trackDragging?'grabbing':'grab';
 
   // Distance indicator arrows at edges when outside
   if(!inside){
@@ -1413,7 +1586,7 @@ function drawTrack(){
   if(reelProg>=100&&G.phase==='reeling'){
     const bossStages=curFish.rar==='boss'?3:1;
     if(bossStage<bossStages-1){
-      bossStage++;reelProg=0;syncBars();
+      bossStage++;reelProg=20;syncBars();
       document.getElementById('rhint').textContent=`Stage ${bossStage+1}/${bossStages} — Fight harder!`;
       ringSpd*=1.28;
     } else {
@@ -1459,13 +1632,17 @@ function setFightMsg(m){
 }
 
 function rollModifier(){
+  // Force modifier from /forcemod command
+  if(G.forceMod){
+    const fm=MODIFIERS.find(m=>m.id===G.forceMod);
+    G.forceMod=null;
+    if(fm){clog('✨ Forced modifier: '+fm.name,'warn');return fm;}
+  }
   const rod=RODS.find(r=>r.id===G.rod);
   const bonus=ROD_MOD_BONUS[G.rod]||0;
   const lm=G.luckTimer>0?1.5:1;
-  // Base chance: ~12% at twig, scales with rod bonus and luck
   const totalChance=0.12+(bonus*0.04)+(rod.lk*0.01)*lm;
   if(Math.random()>totalChance) return null;
-  // Weighted pick
   const pool=MODIFIERS.map(m=>({m,w:m.rarity+(bonus*.5)}));
   const tot=pool.reduce((s,x)=>s+x.w,0);
   let rv=Math.random()*tot;
@@ -1508,6 +1685,13 @@ function landFish(){
   G.caught++; G.streak++;
   if(!G.biomeStreak[G.biome])G.biomeStreak[G.biome]=0;
   G.biomeStreak[G.biome]++;
+  G.sameSpotCasts++;
+  G.idleTime=0; // reset idle on catch
+  // Track last 3 catches for Mirror Carp condition
+  G.lastCatchIds.unshift(curFish.id);
+  if(G.lastCatchIds.length>3)G.lastCatchIds.pop();
+  // Track Golden Koi catch for King's Coin Carp
+  if(curFish.id==='gkoi')G.caughtGoldenKoi=true;
   G.bossActive=null;
   checkGuardianBoss();
   let rewardTxt='';
@@ -1589,6 +1773,15 @@ function closeNote(){document.getElementById('notepop').classList.remove('on');}
 function pickFish(){
   const period=getTimePeriod();
   const rod=RODS.find(r=>r.id===G.rod);
+
+  // Force next fish (from /forcenext command)
+  if(G.forceNextFish){
+    const forced=FISH.find(f=>f.id===G.forceNextFish);
+    G.forceNextFish=null;
+    if(forced){clog('🎣 Forced: '+forced.name,'warn');return forced;}
+    clog('⚠️ Force fish ID not found, picking normally.','err');
+  }
+
   // Boss check
   if(G.bossActive){
     const bev=BOSS_EVTS.find(b=>b.id===G.bossActive);
@@ -1615,22 +1808,31 @@ function pickFish(){
     // Secret conditions
     if(f.rar==='secret'){
       if(!G.notes[f.id])return false;
-      if(f.sc==='fullmoon')return G.fullMoon&&period==='midnight';
-      if(f.sc==='fifty')return G.streak>=50;
-      if(f.sc==='threethirty')return Math.floor(G.gt/60)===3&&Math.floor(G.gt%60)===33;
-      if(f.sc==='rainrainbow')return G.wx==='rain';
-      if(f.sc==='noon_rainbow')return period==='noon'&&G.wx==='rain';
-      if(f.sc==='still_midnight')return period==='midnight'&&G.wx==='clear';
-      if(f.sc==='noon_heat')return period==='noon'&&(G.wx==='clear'||G.wx==='fog');
-      if(f.sc==='eclipse')return G.eclipse;
+      if(f.sc==='fullmoon')          return G.fullMoon&&period==='midnight';
+      if(f.sc==='fifty')             return G.streak>=50;
+      if(f.sc==='brokenwatch')       return G.hasBrokenWatch&&Math.floor(G.gt/60)>=3&&Math.floor(G.gt/60)<=4;
+      if(f.sc==='rainrainbow')       return G.wx==='rain';
+      if(f.sc==='noon_rainbow')      return period==='noon'&&G.wx==='rain';
+      if(f.sc==='still_midnight')    return period==='midnight'&&G.wx==='clear';
+      if(f.sc==='noon_heat')         return period==='noon'&&(G.wx==='clear'||G.wx==='fog');
+      if(f.sc==='eclipse')           return G.eclipse;
+      if(f.sc==='idle_60')           return (G.idleTime||0)>=60;
+      if(f.sc==='meteor_event')      return G.event==='meteor'&&(period==='night'||period==='midnight');
+      if(f.sc==='three_different')   return (()=>{const ids=G.lastCatchIds.slice(0,3);return ids.length===3&&new Set(ids).size===3;})();
+      if(f.sc==='glowbait')          return G.hasGlowBait&&(period==='night'||period==='midnight');
+      if(f.sc==='golden_koi_caught') return G.caughtGoldenKoi&&(period==='dusk'||period==='evening');
+      if(f.sc==='same_spot_5')       return G.sameSpotCasts>=5&&period==='dawn';
       return false;
     }
     // River guardian: needs 30 catches in mtnriver
     if(f.id==='arguardian'){
       return (G.biomeStreak['mtnriver']||0)>=30;
     }
-    // Special spawn conditions for non-secret fish (e.g. eclipse legendary)
-    if(f.sc==='eclipse')return G.eclipse;
+    // Special spawn conditions for non-secret legendary fish
+    if(f.sc==='eclipse')            return G.eclipse;
+    if(f.sc==='fullmoon_night')     return G.fullMoon&&(period==='night'||period==='midnight');
+    if(f.sc==='ten_area')           return (G.biomeStreak[G.biome]||0)>=10&&(period==='dusk'||period==='evening');
+    if(f.sc==='after_rain')         return G.wx==='rain'&&period==='morning';
     return true;
   });
   if(!pool.length)pool=FISH.filter(f=>f.rar==='common'&&['pond','river'].some(b=>f.bio.includes(b)));
@@ -1725,7 +1927,8 @@ function buyLic(id){
   });
 }
 function goTo(id){
-  G.biome=id; G.streak=0; G.biomeStreak[id]=G.biomeStreak[id]||0;
+  G.biome=id; G.streak=0; G.sameSpotCasts=0; G.idleTime=0;
+  G.biomeStreak[id]=G.biomeStreak[id]||0;
   if(G.catBiome===id)showCatShop();
   toast('⛵ Travelled to '+BIOMES.find(b=>b.id===id)?.name+'!');
   updateUI(); renderBiomes();
@@ -1831,6 +2034,21 @@ function usePack(id){
   else if(it.fx==='force_rare'){G.forceRare=true;toast('🌈 Next catch guaranteed Rare+!');}
   else if(it.fx==='luck'){G.luckTimer=it.val;toast('🍀 Luck doubled for 5 min!');}
   else if(it.fx==='fullmoon'){G.fullMoon=true;G.gt=0;updateTimeDom();toast('🌕 Full moon activated!');}
+  else if(it.fx==='magnet'){
+    // Fish up a metallic item — chance to get Broken Watch
+    if(Math.random()<0.55){
+      G.hasBrokenWatch=true;
+      toast('🧲 You fished up a ⌚ Broken Watch! Use it between 3–4 AM at Canal Ruins.');
+      clog('🧲 Magnet Bait: fished up a ⌚ Broken Watch!','ok');
+    } else {
+      toast('🧲 Fished up some old metal... nothing useful this time.');
+      clog('🧲 Magnet Bait: only scrap metal. Try again.','warn');
+    }
+  }
+  else if(it.fx==='glowbait'){
+    G.hasGlowBait=true; G.glowBaitTimer=180; // lasts 3 min
+    toast('💡 Glowing Bait active for 3 min! Attracts light-sensitive creatures.');
+  }
   toast('Used '+it.em+' '+it.name+'!');
   renderPack();
 }
@@ -2112,19 +2330,96 @@ function runCmd(raw){
 function showCmdHelp(){
   clog('═══ Available Commands ═══','sys');
   const cats={
-    'ℹ️  Info':    ['/help','/gold','/time','/weather','/biome','/rod','/caught','/streak','/bag','/stats','/mods','/materials','/trophies','/fish','/biomes','/rods','/upgrades','/version','/identify'],
+    'ℹ️  Info':    ['/help','/gold','/time','/weather','/biome','/rod','/caught','/streak','/bag','/stats','/mods','/materials','/trophies','/fish','/biomes','/rods','/upgrades','/version','/identify','/rarity'],
     '⏰  Time':    ['/dawn','/morning','/noon','/afternoon','/evening','/dusk','/night','/midnight','/timespeed'],
     '🌦️  Weather': ['/sunny','/rain','/storm','/fog','/snow'],
     '✨  Events':  ['/fullmoon','/eclipse','/frenzy','/bloodmoon','/meteor'],
     '🗺️  Travel':  ['/goto','/unlock','/biomestreak','/resetstreak'],
     '💰  Economy': ['/sellall','/sell','/addgold','/givebait'],
+    '🎣  Force':   ['/forcenext','/forcerare','/forcemod','/cancelforce','/spawn'],
+    '🔍  Search':  ['/listfish','/searchfish'],
     '⚙️  Utils':   ['/luckboost','/clear'],
   };
   for(const [cat,cmds] of Object.entries(cats)){
     clog(cat,'sys');
-    cmds.forEach(c=>{const cmd=COMMANDS[c];if(cmd)clog(`  ${c.padEnd(14)} — ${cmd.desc}`,'info');});
+    cmds.forEach(c=>{const cmd=COMMANDS[c];if(cmd)clog(`  ${c.padEnd(15)} — ${cmd.desc}`,'info');});
   }
-  clog('Tip: Tab autocompletes. ↑↓ for history.','sys');
+  clog('Tip: Tab autocompletes. ↑↓ for history. Partial names work too.','sys');
+}
+
+function forceNextCmd(arg){
+  if(!arg){clog('Usage: /forcenext <fish_id>  (use /listfish to see IDs)','err');return;}
+  const id=arg.trim().toLowerCase();
+  const f=FISH.find(x=>x.id===id||x.name.toLowerCase()===id||x.name.toLowerCase().includes(id));
+  if(!f){clog('Fish not found: "'+arg+'". Try /searchfish '+arg,'err');return;}
+  G.forceNextFish=f.id;
+  clog(`🎣 Next catch forced: ${f.em} ${f.name} [${f.rar}]`,'ok');
+  clog('  Cast your line to trigger it. Use /cancelforce to undo.','sys');
+}
+
+function forceModCmd(arg){
+  if(!arg){
+    clog('Usage: /forcemod <modifier_id>','err');
+    clog('Available: '+MODIFIERS.map(m=>m.id+' ('+m.em+m.name+')').join(', '),'info');
+    return;
+  }
+  const id=arg.trim().toLowerCase();
+  const m=MODIFIERS.find(x=>x.id===id||x.name.toLowerCase()===id||x.name.toLowerCase().includes(id));
+  if(!m){clog('Modifier not found: "'+arg+'". Available: '+MODIFIERS.map(x=>x.id).join(', '),'err');return;}
+  G.forceMod=m.id;
+  clog(`✨ Next catch will have modifier: ${m.em} ${m.name}`,'ok');
+}
+
+function listAllFishCmd(){
+  clog('═══ All Fish IDs ═══','sys');
+  const byRar={common:[],uncommon:[],rare:[],epic:[],legendary:[],secret:[],boss:[]};
+  FISH.forEach(f=>{if(byRar[f.rar])byRar[f.rar].push(f);});
+  for(const [rar,fish] of Object.entries(byRar)){
+    if(!fish.length)continue;
+    clog('['+rar.toUpperCase()+']','sys');
+    fish.forEach(f=>clog(`  ${f.id.padEnd(16)} ${f.em} ${f.name}`,'info'));
+  }
+  clog('Usage: /forcenext <id>  e.g. /forcenext bass','sys');
+}
+
+function searchFishCmd(arg){
+  if(!arg){clog('Usage: /searchfish <name>','err');return;}
+  const q=arg.trim().toLowerCase();
+  const results=FISH.filter(f=>
+    f.id.includes(q)||f.name.toLowerCase().includes(q)||
+    f.bio.some(b=>BIOMES.find(x=>x.id===b)?.name.toLowerCase().includes(q))||
+    f.rar.includes(q)
+  );
+  if(!results.length){clog('No fish found matching "'+arg+'"','warn');return;}
+  clog(`Found ${results.length} result(s):`,'info');
+  results.forEach(f=>{
+    const biomeNames=f.bio.map(b=>BIOMES.find(x=>x.id===b)?.name||b).join(', ');
+    clog(`  ${f.em} ${f.name} [${f.id}] — ${f.rar} — ${biomeNames}`,'ok');
+    clog(`     Time: ${Array.isArray(f.tm)?f.tm.join('/'):'any'} | ${f.price>0?f.price+'🪙':'Trophy'} | ${f.mn}–${f.mx}kg`,'info');
+  });
+}
+
+function rarityCmd(){
+  clog('═══ Catch Odds (current rod + biome) ═══','sys');
+  const rod=RODS.find(r=>r.id===G.rod);
+  const bw={common:500,uncommon:200,rare:50,epic:20,legendary:5,secret:0.5,boss:0.1};
+  const adjusted={};
+  for(const [rar,base] of Object.entries(bw)){
+    let w=base;
+    if(rar==='uncommon')w+=rod.lk*8;
+    if(rar==='rare')    w+=rod.lk*5+(G.upg.lure?15:0);
+    if(rar==='epic')    w+=rod.lk*3;
+    if(rar==='legendary')w+=rod.lk*1.5+(G.upg.mbait?8:0);
+    if(rar==='common')  w=Math.max(50,w-rod.lk*6);
+    adjusted[rar]=Math.max(0.01,w);
+  }
+  const tot=Object.values(adjusted).reduce((a,b)=>a+b,0);
+  const emoj={common:'🟢',uncommon:'🔵',rare:'🟣',epic:'🩷',legendary:'⭐',secret:'🔮',boss:'👹'};
+  for(const [rar,w] of Object.entries(adjusted)){
+    const pct=((w/tot)*100).toFixed(2);
+    clog(`  ${emoj[rar]||'  '} ${rar.padEnd(10)} ${pct.padStart(6)}%`,'info');
+  }
+  clog('Note: biome eligibility and time of day affect actual pool.','sys');
 }
 
 function statsCmd(){
@@ -2307,6 +2602,15 @@ window.addEventListener('load',()=>{
       pressReel();
       return;
     }
+    // Arrow keys control track minigame player circle
+    if(!consoleOpen&&trackActive){
+      if(e.key==='ArrowLeft'){trackArrowLeft=true;e.preventDefault();}
+      if(e.key==='ArrowRight'){trackArrowRight=true;e.preventDefault();}
+    }
+  });
+  document.addEventListener('keyup',(e)=>{
+    if(e.key==='ArrowLeft') trackArrowLeft=false;
+    if(e.key==='ArrowRight') trackArrowRight=false;
   });
   // Boot message in console log (pre-populated for when user opens it)
   clog('Corner Pond Console ready. Press ` to toggle.','sys');
