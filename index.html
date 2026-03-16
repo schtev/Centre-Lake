@@ -233,6 +233,7 @@ body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:
   <div class="tstat">Caught: <span id="tcaught">0</span></div>
   <div class="tstat">Biome: <span id="tbiome">Corner Pond</span></div>
   <button onclick="toggleConsole()" style="margin-left:auto;font-size:10px;padding:3px 10px;background:rgba(255,255,255,.15);color:#fdf0d0;border:1.5px solid rgba(255,255,255,.2);border-radius:5px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;letter-spacing:.3px;" title="Open console (or press `)">📟 Console</button>
+  <span id="save-ind" style="font-size:10px;color:rgba(255,255,255,0.35);cursor:pointer;" title="Click to save" onclick="saveGame()">Auto-save on</span>
 </div>
 
 <div id="wrap">
@@ -697,6 +698,13 @@ const COMMANDS={
   '/misszone':   {desc:'Show Shadow Ripple Carp miss zone progress.', fn:()=>missZoneCmd()},
   '/riverseq':   {desc:'Show Runestone Salmon cast sequence.',        fn:()=>riverSeqCmd()},
   '/resetpuzzle':{desc:'Reset all puzzle tracking states.',           fn:()=>{G.missZonesHit=new Set();G.riverCastOrder=[];G.sameSpotCasts=0;G.idleTime=0;clog('♻️ All puzzle states reset.','ok');}},
+  // Save system
+  '/save':       {desc:'Save game to browser storage.',               fn:()=>saveGame()},
+  '/load':       {desc:'Reload save from browser storage.',           fn:()=>{if(loadGame()){updateUI();buildComp();renderBiomes();renderShop();renderBag();updateTimeDom();clog('✅ Game reloaded from save.','ok');}else clog('No save found.','warn');}},
+  '/deletesave': {desc:'Delete saved game (cannot be undone).',       fn:()=>deleteSave()},
+  '/exportsave': {desc:'Export save as base64 string (copy/paste).',  fn:()=>exportSave()},
+  '/importsave': {desc:'Import save from base64. Usage: /importsave <string>', fn:(a)=>importSave(a)},
+  '/saveinfo':   {desc:'Show save slot info and timestamp.',          fn:()=>saveInfoCmd()},
   // Force / cheat commands
   '/forcenext':  {desc:'Force next catch to specific fish. Usage: /forcenext bass',  fn:(a)=>forceNextCmd(a)},
   '/forcerare':  {desc:'Next catch guaranteed Rare or better.',       fn:()=>{G.forceRare=true;clog('🌟 Next catch will be Rare+!','ok');}},
@@ -707,6 +715,180 @@ const COMMANDS={
   '/rarity':     {desc:'Show catch odds for current rod/biome.',      fn:()=>rarityCmd()},
   '/spawn':      {desc:'Instantly trigger a bite (debug).',           fn:()=>{if(G.phase==='idle'){castLine();setTimeout(()=>triggerBite(),100);}else clog('Already fishing.','warn');}},
 };
+
+// ═══════════════════════════════════════════════
+// SAVE SYSTEM
+// ═══════════════════════════════════════════════
+const SAVE_KEY='corner_pond_save';
+const SAVE_VERSION=1; // increment when schema changes; add migration below
+
+// Keys from G that are NOT saved (transient runtime state)
+const TRANSIENT_KEYS=new Set([
+  'phase','bossActive','event','evtTimer','eclipse','eclipseTimer',
+  'wxTimer','catBiome','catCool','fullMoon','luckTimer','forceRare',
+  'forceNextFish','forceMod','hasGlowBait','glowBaitTimer',
+  'idleTime','castZoneHistory','lastCastZone','cfilt','seed',
+  '_castZoneFlash','_hoverX','_hoverY',
+]);
+
+function getSaveable(){
+  const out={};
+  for(const [k,v] of Object.entries(G)){
+    if(TRANSIENT_KEYS.has(k)) continue;
+    // Serialise Set as array
+    if(v instanceof Set) out[k]=[...v];
+    else out[k]=v;
+  }
+  return out;
+}
+
+function saveGame(silent=false){
+  try{
+    const payload={
+      v: SAVE_VERSION,
+      ts: Date.now(),
+      data: getSaveable(),
+    };
+    localStorage.setItem(SAVE_KEY, JSON.stringify(payload));
+    if(!silent){
+      toast('💾 Game saved!');
+      setSaveIndicator('Saved ✓', '#50c060');
+    }
+    return true;
+  } catch(e){
+    clog('⚠️ Save failed: '+e.message,'err');
+    return false;
+  }
+}
+
+function loadGame(){
+  try{
+    const raw=localStorage.getItem(SAVE_KEY);
+    if(!raw) return false;
+    const payload=JSON.parse(raw);
+    if(!payload||!payload.data) return false;
+
+    // Migrate if needed
+    const migrated=migrateSave(payload);
+    const d=migrated.data;
+
+    // Apply saved values onto G, skipping transient keys
+    for(const [k,v] of Object.entries(d)){
+      if(TRANSIENT_KEYS.has(k)) continue;
+      if(!(k in G)) continue; // ignore keys that no longer exist
+      // Re-hydrate Set
+      if(k==='missZonesHit') G[k]=new Set(Array.isArray(v)?v:[]);
+      else G[k]=v;
+    }
+
+    // Ensure required fields have defaults if missing from old save
+    if(!G.disc)         G.disc={};
+    if(!G.notes)        G.notes={};
+    if(!G.discoveredMods) G.discoveredMods={};
+    if(!G.biomeStreak)  G.biomeStreak={};
+    if(!G.bag)          G.bag=[];
+    if(!G.pack)         G.pack=[];
+    if(!G.trophies)     G.trophies=[];
+    if(!G.mats)         G.mats={};
+    if(!G.rods)         G.rods={twig:true};
+    if(!G.upg)          G.upg={worm:false,lure:false,mbait:false,boat:false,glic:false,hat:false,vest:false};
+    if(!G.biomes)       G.biomes={pond:{unlocked:true,lic:true}};
+    if(!G.lastCatchIds) G.lastCatchIds=[];
+    if(!G.riverCastOrder) G.riverCastOrder=[];
+    if(!(G.missZonesHit instanceof Set)) G.missZonesHit=new Set();
+    // Always reset phase to idle on load
+    G.phase='idle';
+    G.bossActive=null;
+    G.event=null; G.evtTimer=0;
+
+    const age=Math.round((Date.now()-migrated.ts)/60000);
+    clog(`💾 Save loaded (v${migrated.v}, saved ${age} min ago).`,'ok');
+    return true;
+  } catch(e){
+    clog('⚠️ Load failed: '+e.message,'err');
+    return false;
+  }
+}
+
+function deleteSave(){
+  localStorage.removeItem(SAVE_KEY);
+  toast('🗑️ Save deleted.');
+  clog('🗑️ Save deleted. Refresh to start fresh.','warn');
+}
+
+// ── Migration: upgrade old saves to current schema ──
+function migrateSave(payload){
+  let p={...payload, data:{...payload.data}};
+
+  // v0 → v1: add fields that didn't exist
+  if((p.v||0)<1){
+    const d=p.data;
+    if(d.missZonesHit===undefined) d.missZonesHit=[];
+    if(d.riverCastOrder===undefined) d.riverCastOrder=[];
+    if(d.sameSpotCasts===undefined) d.sameSpotCasts=0;
+    if(d.hasBrokenWatch===undefined) d.hasBrokenWatch=false;
+    if(d.caughtGoldenKoi===undefined) d.caughtGoldenKoi=false;
+    if(d.discoveredMods===undefined) d.discoveredMods={};
+    if(d.lastCatchIds===undefined) d.lastCatchIds=[];
+    if(d.biomeStreak===undefined) d.biomeStreak={};
+    if(d.trophies===undefined) d.trophies=[];
+    if(d.mats===undefined) d.mats={};
+    // Normalise disc entries — ensure they have mods field
+    if(d.disc) for(const k of Object.keys(d.disc)){
+      if(!d.disc[k].mods) d.disc[k].mods={};
+    }
+    p.v=1;
+    clog('💾 Save migrated from v0 → v1','sys');
+  }
+
+  // Future migrations go here:
+  // if(p.v < 2){ ... p.v=2; }
+
+  p.v=SAVE_VERSION;
+  return p;
+}
+
+// ── Save indicator in topbar ──
+function setSaveIndicator(text, col='#c8b88a'){
+  const el=document.getElementById('save-ind');
+  if(!el) return;
+  el.textContent=text;
+  el.style.color=col;
+  clearTimeout(setSaveIndicator._t);
+  setSaveIndicator._t=setTimeout(()=>{
+    el.textContent='Auto-save on';
+    el.style.color='rgba(255,255,255,0.35)';
+  }, 3000);
+}
+
+// ── Export save as base64 string ──
+function exportSave(){
+  const raw=localStorage.getItem(SAVE_KEY);
+  if(!raw){clog('No save found to export.','warn');return null;}
+  const b64=btoa(unescape(encodeURIComponent(raw)));
+  clog('═══ Save Export ═══','sys');
+  clog('Copy the string below and use /importsave to restore:','info');
+  clog(b64,'ok');
+  // Also try clipboard
+  if(navigator.clipboard){
+    navigator.clipboard.writeText(b64).then(()=>clog('✅ Copied to clipboard!','ok')).catch(()=>{});
+  }
+  return b64;
+}
+
+function importSave(b64){
+  if(!b64){clog('Usage: /importsave <base64string>','err');return;}
+  try{
+    const raw=decodeURIComponent(escape(atob(b64.trim())));
+    const payload=JSON.parse(raw);
+    if(!payload||!payload.data) throw new Error('Invalid save data');
+    localStorage.setItem(SAVE_KEY, raw);
+    clog('✅ Save imported! Reloading...','ok');
+    setTimeout(()=>location.reload(), 800);
+  } catch(e){
+    clog('❌ Import failed: '+e.message,'err');
+  }
+}
 
 // ═══════════════════════════════════════════════
 // STATE
@@ -1215,6 +1397,9 @@ function startTick(){
     // Track idle time in biome (for Whispering Koi — no cast for 60s)
     if(G.phase==='idle'){G.idleTime=(G.idleTime||0)+1;}
     else{G.idleTime=0;}
+    // Auto-save every 30 real seconds
+    G._autoSaveTick=(G._autoSaveTick||0)+1;
+    if(G._autoSaveTick>=30){G._autoSaveTick=0;saveGame(true);setSaveIndicator('Auto-saved ✓','#50c060');}
 
     // Eclipse countdown
     if(G.eclipseTimer>0){G.eclipseTimer--;if(G.eclipseTimer<=0)G.eclipse=false;}
@@ -2489,6 +2674,7 @@ function showCmdHelp(){
     '🎣  Force':   ['/forcenext','/forcerare','/forcemod','/cancelforce','/spawn'],
     '🔍  Search':  ['/listfish','/searchfish'],
     '🧩  Puzzles': ['/puzzles','/misszone','/riverseq','/resetpuzzle'],
+    '💾  Save':    ['/save','/load','/deletesave','/exportsave','/importsave','/saveinfo'],
     '⚙️  Utils':   ['/luckboost','/clear'],
   };
   for(const [cat,cmds] of Object.entries(cats)){
@@ -2676,6 +2862,27 @@ function timeSpeedCmd(arg){
   clog('⏰ Time speed set to '+n+'x','ok');
 }
 
+function saveInfoCmd(){
+  const raw=localStorage.getItem(SAVE_KEY);
+  if(!raw){clog('No save found in browser storage.','warn');return;}
+  try{
+    const p=JSON.parse(raw);
+    const age=Math.round((Date.now()-p.ts)/60000);
+    const d=p.data;
+    clog('═══ Save Info ═══','sys');
+    clog(`Save version: v${p.v} | Saved: ${age < 60 ? age+'m ago' : Math.round(age/60)+'h ago'}`,'info');
+    clog(`Gold: ${d.gold}🪙 | Caught: ${d.caught} | Sold: ${d.sold}`,'info');
+    clog(`Rod: ${RODS.find(r=>r.id===d.rod)?.name||d.rod} | Biome: ${BIOMES.find(b=>b.id===d.biome)?.name||d.biome}`,'info');
+    const discCount=d.disc?Object.keys(d.disc).length:0;
+    const unlockedBiomes=d.biomes?Object.keys(d.biomes).filter(k=>d.biomes[k]?.unlocked).length:0;
+    clog(`Fish discovered: ${discCount}/${FISH.length} | Biomes unlocked: ${unlockedBiomes}/${BIOMES.length}`,'info');
+    const size=Math.round(raw.length/1024*10)/10;
+    clog(`Save size: ~${size}KB`,'sys');
+  } catch(e){
+    clog('Save data corrupted: '+e.message,'err');
+  }
+}
+
 function cmdToast(m){toast('📟 '+m);}
 // (keep for backwards compat with any remaining calls)
 
@@ -2778,6 +2985,8 @@ function checkGuardianBoss(){
 // INIT
 // ═══════════════════════════════════════════════
 window.addEventListener('load',()=>{
+  // Load save on startup
+  const loaded=loadGame();
   requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{
       initCanvas();
@@ -2788,8 +2997,12 @@ window.addEventListener('load',()=>{
   updateUI();
   buildComp();
   updateTimeDom();
-  setWx('clear');
+  setWx(G.wx||'clear');
   startTick();
+  if(loaded){
+    toast('💾 Save loaded!');
+    setSaveIndicator('Loaded ✓','#60c8f0');
+  }
 
   // Backtick opens console; Escape closes it
   document.addEventListener('keydown',(e)=>{
@@ -2871,6 +3084,12 @@ window.addEventListener('load',()=>{
   // Boot message in console log (pre-populated for when user opens it)
   clog('Corner Pond Console ready. Press ` to toggle.','sys');
   clog('Tip: Click/tap the water to cast at that spot!','sys');
+
+  // Auto-save on page hide (tab switch, close, etc.)
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='hidden') saveGame(true);
+  });
+  window.addEventListener('beforeunload',()=>saveGame(true));
 });
 </script>
 </body>
