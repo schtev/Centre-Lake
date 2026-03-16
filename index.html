@@ -173,7 +173,11 @@ body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:
 #mok{padding:7px 18px;background:var(--bg);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;margin-right:5px;}
 #mnope{padding:7px 14px;background:var(--wd);color:#fdf0d0;border:none;border-radius:6px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;}
 
-/* CAST BTN */
+/* Track minigame */
+#track-wrap{width:90%;max-width:380px;}
+#track-outer{transition:transform 0s;}
+#track-canvas{width:100%;height:60px;border-radius:10px;background:rgba(0,0,0,.45);border:1.5px solid rgba(255,255,255,.12);}
+#track-status{min-height:16px;}
 #fov{position:absolute;bottom:0;left:0;right:0;display:flex;flex-direction:column;align-items:center;padding-bottom:13px;pointer-events:none;z-index:10;}
 #fov>*{pointer-events:all;}
 #castbtn{font-family:'Lora',serif;font-size:15px;font-weight:600;background:var(--wd);color:#fdf0d0;border:3px solid var(--wdd);border-radius:50px;padding:9px 28px;cursor:pointer;box-shadow:0 4px 0 var(--wdd);transition:transform .1s,box-shadow .1s;}
@@ -185,6 +189,16 @@ body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:
 #toast{position:absolute;top:9px;left:50%;transform:translateX(-50%);background:rgba(18,12,4,.94);color:#fdf0d0;padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .3s;z-index:30;white-space:nowrap;}
 #toast.on{opacity:1;}
 
+/* Console overlay */
+#console-overlay{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(8,5,2,.93);z-index:40;flex-direction:column;font-family:'Courier New',monospace;}
+#console-overlay.open{display:flex !important;}
+#console-log .cline{padding:1px 0;border-bottom:1px solid rgba(255,255,255,.04);}
+#console-log .cline.ok{color:#80e890;}
+#console-log .cline.err{color:#f07070;}
+#console-log .cline.info{color:#90c8f0;}
+#console-log .cline.warn{color:#f0c860;}
+#console-log .cline.cmd{color:#c8f0c0;font-weight:700;}
+#console-log .cline.sys{color:#909090;font-style:italic;}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:var(--pbr);border-radius:2px;}
 </style>
@@ -198,10 +212,7 @@ body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:
   <div class="tstat">Gold: <span id="tgold">0</span>🪙</div>
   <div class="tstat">Caught: <span id="tcaught">0</span></div>
   <div class="tstat">Biome: <span id="tbiome">Corner Pond</span></div>
-  <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
-    <input id="cmdinput" type="text" placeholder="/help for commands" style="font-family:'Nunito',sans-serif;font-size:11px;padding:3px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fdf0d0;width:160px;outline:none;" onkeydown="if(event.key==='Enter')runCmd(this.value)"/>
-    <button onclick="runCmd(document.getElementById('cmdinput').value)" style="font-size:10px;padding:3px 8px;background:rgba(255,255,255,.15);color:#fdf0d0;border:1.5px solid rgba(255,255,255,.2);border-radius:5px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;">Go</button>
-  </div>
+  <button onclick="toggleConsole()" style="margin-left:auto;font-size:10px;padding:3px 10px;background:rgba(255,255,255,.15);color:#fdf0d0;border:1.5px solid rgba(255,255,255,.2);border-radius:5px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;letter-spacing:.3px;" title="Open console (or press `)">📟 Console</button>
 </div>
 
 <div id="wrap">
@@ -257,7 +268,7 @@ body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:
     <!-- REEL MINIGAME -->
     <div id="rw">
       <div id="rstat">Fish on the line!<small id="rhint">Press REEL when the ring is smallest!</small></div>
-      <div style="width:210px;height:210px;">
+      <div style="width:210px;height:210px;" id="ring-wrap">
         <svg id="rsvg" viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg" width="210" height="210">
           <circle cx="105" cy="105" r="88" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="18"/>
           <circle id="rring" cx="105" cy="105" r="88" fill="none" stroke="#e8734a" stroke-width="5" stroke-dasharray="553"/>
@@ -267,6 +278,16 @@ body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:
           <text x="105" y="114" text-anchor="middle" font-family="'Lora',serif" font-size="10" fill="#fff" font-weight="600">REEL!</text>
         </svg>
       </div>
+
+      <!-- DRAG TRACK MINIGAME (hidden by default) -->
+      <div id="track-wrap" style="display:none;flex-direction:column;align-items:center;gap:10px;width:100%;">
+        <div id="track-label" style="font-family:'Lora',serif;font-size:14px;color:#fdf0d0;text-align:center;">Keep it steady!</div>
+        <div id="track-outer" style="position:relative;width:340px;max-width:90vw;height:60px;display:flex;align-items:center;">
+          <canvas id="track-canvas" width="340" height="60" style="border-radius:10px;display:block;"></canvas>
+        </div>
+        <div id="track-status" style="font-size:12px;color:#f5a07a;font-style:italic;height:16px;text-align:center;"></div>
+      </div>
+
       <div id="rbarrow">
         <span style="font-size:10px;color:#c8b88a;min-width:40px;text-align:right;">Fish</span>
         <div style="width:170px;height:11px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden;border:1px solid rgba(255,255,255,.12)">
@@ -326,16 +347,25 @@ body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:
     <!-- EVENT BANNER -->
     <div id="evtban"></div>
 
-    <!-- COMMAND HELP -->
-    <div class="pop" id="helppop" style="max-width:320px;max-height:80vh;overflow-y:auto;text-align:left;">
-      <div style="font-family:'Lora',serif;font-size:14px;font-weight:600;color:var(--wdd);margin-bottom:8px;text-align:center;">📟 Commands</div>
-      <div id="helplist" style="font-size:10px;line-height:1.8;color:var(--tx);"></div>
-      <button class="pclose" style="display:block;margin:8px auto 0;" onclick="document.getElementById('helppop').classList.remove('on')">Close</button>
-    </div>
-
     <!-- CAST -->
     <div id="fov"><button id="castbtn" onclick="castLine()">🎣 Cast Line</button></div>
     <div id="toast"></div>
+
+    <!-- CONSOLE OVERLAY -->
+    <div id="console-overlay" style="display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(8,5,2,.92);z-index:40;flex-direction:column;font-family:'Courier New',monospace;">
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;border-bottom:1px solid rgba(255,255,255,.12);">
+        <span style="color:#50e090;font-size:14px;font-weight:700;">📟 Corner Pond Console</span>
+        <span style="color:rgba(255,255,255,.4);font-size:11px;">Press ` or Escape to close</span>
+      </div>
+      <div id="console-log" style="flex:1;overflow-y:auto;padding:8px 14px;font-size:12px;line-height:1.8;color:#c8e8c0;"></div>
+      <div style="display:flex;align-items:center;padding:8px 14px;border-top:1px solid rgba(255,255,255,.1);gap:8px;">
+        <span style="color:#50e090;font-size:13px;font-weight:700;">$&gt;</span>
+        <input id="console-input" type="text" placeholder="Type a command... (try /help)" autocomplete="off" spellcheck="false"
+          style="flex:1;background:transparent;border:none;outline:none;color:#e0f8e0;font-family:'Courier New',monospace;font-size:13px;"
+          onkeydown="handleConsoleKey(event)"/>
+        <button onclick="execConsoleCmd()" style="font-size:11px;padding:3px 10px;background:#204820;color:#80e080;border:1px solid #40a040;border-radius:4px;cursor:pointer;font-family:'Courier New',monospace;">Run</button>
+      </div>
+    </div>
 
     <!-- MODAL -->
     <div id="modal">
@@ -371,21 +401,21 @@ body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:
 // DATA
 // ═══════════════════════════════════════════════
 const BIOMES=[
-  {id:'pond',     name:'Corner Pond',    em:'🌿', desc:'Peaceful local pond.',            price:0,    lic:0,   boat:false, bgC:'#5a8a3c',wtC:'#4a9b8e',shC:'#c8a97a'},
-  {id:'river',    name:'River Bend',     em:'🏞️', desc:'Flowing river, diverse fish.',    price:150,  lic:50,  boat:false, bgC:'#4a7a3c',wtC:'#3a8acd',shC:'#b8a878'},
-  {id:'mtnriver', name:'Mountain River', em:'⛰️', desc:'Cold fast alpine waters.',        price:300,  lic:80,  boat:false, bgC:'#5a7050',wtC:'#5aabce',shC:'#a0907a'},
-  {id:'swamp',    name:'Murky Swamp',    em:'🌿', desc:'Dark murky waters.',              price:200,  lic:60,  boat:false, bgC:'#3a5030',wtC:'#4a7050',shC:'#8a7a60'},
-  {id:'clake',    name:'Clear Lake',     em:'💎', desc:'Crystal clear shimmering water.', price:400,  lic:100, boat:false, bgC:'#5a9050',wtC:'#60c0e0',shC:'#c0b090'},
-  {id:'coastal',  name:'Coastal Ocean',  em:'🌊', desc:'Sandy shallow shores.',           price:500,  lic:120, boat:true,  bgC:'#b0a070',wtC:'#2060c0',shC:'#d0c090'},
-  {id:'coldr',    name:'Cold River',     em:'❄️', desc:'Icy river, glowing fish.',        price:600,  lic:150, boat:true,  bgC:'#607870',wtC:'#60a0d0',shC:'#b0c0c0'},
-  {id:'temple',   name:'Temple Pond',    em:'⛩️', desc:'Sacred garden, rare fish.',       price:800,  lic:200, boat:false, bgC:'#608060',wtC:'#70b890',shC:'#c8b890'},
-  {id:'deepocean',name:'Deep Ocean',     em:'🌊', desc:'Dark open waters.',               price:1200, lic:300, boat:true,  bgC:'#102040',wtC:'#102050',shC:'#303050'},
-  {id:'frozen',   name:'Frozen Lake',    em:'🧊', desc:'Arctic wasteland.',               price:1500, lic:350, boat:true,  bgC:'#c0d8f0',wtC:'#a0d0f0',shC:'#e0f0ff'},
-  {id:'harbor',   name:'Ruined Harbor',  em:'⚓', desc:'Ancient sunken port.',            price:1800, lic:400, boat:true,  bgC:'#405060',wtC:'#507080',shC:'#708090'},
-  {id:'sacred',   name:'Sacred Lake',    em:'✨', desc:'Mythical ancient lake.',           price:3000, lic:600, boat:true,  bgC:'#503080',wtC:'#8060c0',shC:'#9080a0'},
-  {id:'trench',   name:'Deep Trench',    em:'🕳️', desc:'The abyss.',                      price:5000, lic:1000,boat:true,  bgC:'#0a0a18',wtC:'#0a0a20',shC:'#202030'},
-  {id:'falls',    name:'Waterfall Pools',em:'💧', desc:'Hidden pools beneath falls.',     price:700,  lic:180, boat:false, bgC:'#508060',wtC:'#50c0a0',shC:'#90b890'},
-  {id:'canal',    name:'Canal Ruins',    em:'🏚️', desc:'Abandoned canals.',               price:900,  lic:220, boat:false, bgC:'#504040',wtC:'#607060',shC:'#806060'},
+  {id:'pond',     name:'Corner Pond',    em:'🌿', desc:'Peaceful local pond.',            price:0,     lic:0,    boat:false, bgC:'#5a8a3c',wtC:'#4a9b8e',shC:'#c8a97a'},
+  {id:'river',    name:'River Bend',     em:'🏞️', desc:'Flowing river, diverse fish.',    price:1500,  lic:400,  boat:false, bgC:'#4a7a3c',wtC:'#3a8acd',shC:'#b8a878'},
+  {id:'mtnriver', name:'Mountain River', em:'⛰️', desc:'Cold fast alpine waters.',        price:2500,  lic:600,  boat:false, bgC:'#5a7050',wtC:'#5aabce',shC:'#a0907a'},
+  {id:'swamp',    name:'Murky Swamp',    em:'🌿', desc:'Dark murky waters.',              price:2000,  lic:500,  boat:false, bgC:'#3a5030',wtC:'#4a7050',shC:'#8a7a60'},
+  {id:'clake',    name:'Clear Lake',     em:'💎', desc:'Crystal clear shimmering water.', price:3500,  lic:800,  boat:false, bgC:'#5a9050',wtC:'#60c0e0',shC:'#c0b090'},
+  {id:'coastal',  name:'Coastal Ocean',  em:'🌊', desc:'Sandy shallow shores.',           price:5000,  lic:1000, boat:true,  bgC:'#b0a070',wtC:'#2060c0',shC:'#d0c090'},
+  {id:'coldr',    name:'Cold River',     em:'❄️', desc:'Icy river, glowing fish.',        price:6000,  lic:1200, boat:true,  bgC:'#607870',wtC:'#60a0d0',shC:'#b0c0c0'},
+  {id:'temple',   name:'Temple Pond',    em:'⛩️', desc:'Sacred garden, rare fish.',       price:8000,  lic:1500, boat:false, bgC:'#608060',wtC:'#70b890',shC:'#c8b890'},
+  {id:'deepocean',name:'Deep Ocean',     em:'🌊', desc:'Dark open waters.',               price:12000, lic:2500, boat:true,  bgC:'#102040',wtC:'#102050',shC:'#303050'},
+  {id:'frozen',   name:'Frozen Lake',    em:'🧊', desc:'Arctic wasteland.',               price:15000, lic:3000, boat:true,  bgC:'#c0d8f0',wtC:'#a0d0f0',shC:'#e0f0ff'},
+  {id:'harbor',   name:'Ruined Harbor',  em:'⚓', desc:'Ancient sunken port.',            price:18000, lic:3500, boat:true,  bgC:'#405060',wtC:'#507080',shC:'#708090'},
+  {id:'sacred',   name:'Sacred Lake',    em:'✨', desc:'Mythical ancient lake.',           price:30000, lic:5000, boat:true,  bgC:'#503080',wtC:'#8060c0',shC:'#9080a0'},
+  {id:'trench',   name:'Deep Trench',    em:'🕳️', desc:'The abyss.',                      price:50000, lic:8000, boat:true,  bgC:'#0a0a18',wtC:'#0a0a20',shC:'#202030'},
+  {id:'falls',    name:'Waterfall Pools',em:'💧', desc:'Hidden pools beneath falls.',     price:7000,  lic:1400, boat:false, bgC:'#508060',wtC:'#50c0a0',shC:'#90b890'},
+  {id:'canal',    name:'Canal Ruins',    em:'🏚️', desc:'Abandoned canals.',               price:9000,  lic:1800, boat:false, bgC:'#504040',wtC:'#607060',shC:'#806060'},
 ];
 
 const TD=['morning','noon','afternoon'];
@@ -534,32 +564,63 @@ const MODIFIERS=[
 const ROD_MOD_BONUS={twig:0,wooden:0,bamboo:0.5,storm:0.5,crystal:1,abyss:1.5,frostbite:1,tides:2,celestial:4};
 
 // ─── COMMANDS ────────────────────────────────────
+// Command registry — each entry: desc, fn, args (optional description)
 const COMMANDS={
-  '/help':     {desc:'Show all available commands.',           fn:()=>showCmdHelp()},
-  '/gold':     {desc:'Show your current gold.',                fn:()=>cmdToast('🪙 Gold: '+G.gold)},
-  '/time':     {desc:'Show current game time.',                fn:()=>cmdToast('⏰ '+document.getElementById('time-disp').textContent)},
-  '/weather':  {desc:'Show current weather.',                  fn:()=>cmdToast('🌦️ '+document.getElementById('wx-disp').textContent)},
-  '/biome':    {desc:'Show current biome.',                    fn:()=>cmdToast('📍 '+BIOMES.find(b=>b.id===G.biome)?.name)},
-  '/rod':      {desc:'Show equipped rod.',                     fn:()=>cmdToast('🎣 '+RODS.find(r=>r.id===G.rod)?.name)},
-  '/caught':   {desc:'Show total fish caught.',                fn:()=>cmdToast('🐟 Caught: '+G.caught)},
-  '/streak':   {desc:'Show current catch streak.',             fn:()=>cmdToast('🔥 Streak: '+G.streak)},
-  '/bag':      {desc:'Show bag contents count.',               fn:()=>cmdToast('🎒 Bag: '+G.bag.length+' fish')},
-  '/sellall':  {desc:'Sell all fish in your bag.',             fn:()=>sellAll()},
-  '/mods':     {desc:'Show discovered modifiers.',             fn:()=>showModsCmd()},
-  '/materials':{desc:'Show collected boss materials.',         fn:()=>showMatsCmd()},
-  '/dawn':     {desc:'Set time to dawn.',                      fn:()=>{G.gt=240;updateTimeDom();cmdToast('🌅 Time set to Dawn');}},
-  '/noon':     {desc:'Set time to noon.',                      fn:()=>{G.gt=720;updateTimeDom();cmdToast('☀️ Time set to Noon');}},
-  '/night':    {desc:'Set time to night.',                     fn:()=>{G.gt=1320;updateTimeDom();cmdToast('🌙 Time set to Night');}},
-  '/midnight': {desc:'Set time to midnight.',                  fn:()=>{G.gt=0;updateTimeDom();cmdToast('🌑 Time set to Midnight');}},
-  '/clear':    {desc:'Clear weather.',                         fn:()=>{setWx('clear');cmdToast('☀️ Weather cleared');}},
-  '/storm':    {desc:'Summon a storm.',                        fn:()=>{setWx('storm',180);cmdToast('⛈️ Storm summoned!');}},
-  '/rain':     {desc:'Start rain.',                            fn:()=>{setWx('rain',180);cmdToast('🌧️ Rain started!');}},
-  '/fog':      {desc:'Start fog.',                             fn:()=>{setWx('fog',120);cmdToast('🌫️ Fog rolled in.');}},
-  '/snow':     {desc:'Start snow.',                            fn:()=>{setWx('snow',120);cmdToast('❄️ Snow falling!');}},
-  '/fullmoon': {desc:'Toggle full moon.',                      fn:()=>{G.fullMoon=!G.fullMoon;cmdToast('🌕 Full moon '+(G.fullMoon?'ON':'OFF'));}},
-  '/eclipse':  {desc:'Trigger solar eclipse event.',           fn:()=>triggerEclipse()},
-  '/frenzy':   {desc:'Trigger Fish Frenzy event.',             fn:()=>triggerWEvent('frenzy')},
-  '/bloodmoon':{desc:'Trigger Blood Moon event.',              fn:()=>triggerWEvent('bmoon')},
+  '/help':       {desc:'List all commands.',                          fn:()=>showCmdHelp()},
+  '/clear':      {desc:'Clear the console log.',                      fn:()=>clearConsole()},
+  // Info
+  '/gold':       {desc:'Show current gold.',                          fn:()=>clog('🪙 Gold: '+G.gold,'info')},
+  '/time':       {desc:'Show current game time.',                     fn:()=>clog('⏰ '+document.getElementById('time-disp').textContent,'info')},
+  '/weather':    {desc:'Show current weather.',                       fn:()=>clog('🌦️ '+G.wx,'info')},
+  '/biome':      {desc:'Show current biome + streak.',                fn:()=>clog('📍 '+BIOMES.find(b=>b.id===G.biome)?.name+' | Streak: '+(G.biomeStreak[G.biome]||0),'info')},
+  '/rod':        {desc:'Show equipped rod stats.',                    fn:()=>{const r=RODS.find(x=>x.id===G.rod);clog(`🎣 ${r.name} | Power:${r.pw} Speed:${r.sp} Luck:${r.lk} Dur:${r.dur}`,'info');}},
+  '/caught':     {desc:'Show total fish caught.',                     fn:()=>clog('🐟 Total caught: '+G.caught,'info')},
+  '/streak':     {desc:'Show current consecutive streak.',            fn:()=>clog('🔥 Streak: '+G.streak,'info')},
+  '/bag':        {desc:'List fish in bag.',                           fn:()=>listBagCmd()},
+  '/stats':      {desc:'Show full player stats.',                     fn:()=>statsCmd()},
+  '/mods':       {desc:'List discovered modifiers.',                  fn:()=>modsCmd()},
+  '/materials':  {desc:'List collected boss materials.',              fn:()=>matesCmd()},
+  '/trophies':   {desc:'List boss trophies earned.',                  fn:()=>clog('🏆 Trophies: '+(G.trophies.length?G.trophies.map(id=>FISH.find(f=>f.id===id)?.name||id).join(', '):'None yet'),'info')},
+  '/fish':       {desc:'List fish discovered so far.',                fn:()=>discoveredCmd()},
+  '/biomes':     {desc:'List all biomes and unlock status.',          fn:()=>biomesCmd()},
+  '/rods':       {desc:'List all rods and ownership.',                fn:()=>rodsCmd()},
+  '/upgrades':   {desc:'List all upgrades and ownership.',            fn:()=>upgradesCmd()},
+  '/version':    {desc:'Show game version.',                          fn:()=>clog('Corner Pond v2.4 — Built with ❤️','sys')},
+  // Actions
+  '/sellall':    {desc:'Sell all fish in bag.',                       fn:()=>{sellAll();clog('💰 Sold all fish.','ok');}},
+  '/sell':       {desc:'Sell all fish in bag (alias).',               fn:()=>{sellAll();clog('💰 Sold all fish.','ok');}},
+  // Time control
+  '/dawn':       {desc:'Set time to Dawn (05:00).',                   fn:()=>{G.gt=300;updateTimeDom();clog('🌅 Time → Dawn','ok');}},
+  '/morning':    {desc:'Set time to Morning (08:00).',                fn:()=>{G.gt=480;updateTimeDom();clog('🌤️ Time → Morning','ok');}},
+  '/noon':       {desc:'Set time to Noon (12:00).',                   fn:()=>{G.gt=720;updateTimeDom();clog('☀️ Time → Noon','ok');}},
+  '/afternoon':  {desc:'Set time to Afternoon (15:00).',              fn:()=>{G.gt=900;updateTimeDom();clog('🌤️ Time → Afternoon','ok');}},
+  '/evening':    {desc:'Set time to Evening (18:00).',                fn:()=>{G.gt=1080;updateTimeDom();clog('🌆 Time → Evening','ok');}},
+  '/dusk':       {desc:'Set time to Dusk (20:00).',                   fn:()=>{G.gt=1200;updateTimeDom();clog('🌇 Time → Dusk','ok');}},
+  '/night':      {desc:'Set time to Night (22:00).',                  fn:()=>{G.gt=1320;updateTimeDom();clog('🌙 Time → Night','ok');}},
+  '/midnight':   {desc:'Set time to Midnight (00:00).',               fn:()=>{G.gt=0;updateTimeDom();clog('🌑 Time → Midnight','ok');}},
+  '/timespeed':  {desc:'Set time speed (1-10). Usage: /timespeed 5', fn:(a)=>timeSpeedCmd(a)},
+  // Weather
+  '/sunny':      {desc:'Set clear weather.',                          fn:()=>{setWx('clear');clog('☀️ Weather → Clear','ok');}},
+  '/rain':       {desc:'Start rain.',                                 fn:()=>{setWx('rain',300);clog('🌧️ Weather → Rain','ok');}},
+  '/storm':      {desc:'Summon a storm.',                             fn:()=>{setWx('storm',300);clog('⛈️ Weather → Storm','ok');}},
+  '/fog':        {desc:'Start fog.',                                  fn:()=>{setWx('fog',200);clog('🌫️ Weather → Fog','ok');}},
+  '/snow':       {desc:'Start snow.',                                 fn:()=>{setWx('snow',200);clog('❄️ Weather → Snow','ok');}},
+  // Special events
+  '/fullmoon':   {desc:'Toggle full moon on/off.',                    fn:()=>{G.fullMoon=!G.fullMoon;clog('🌕 Full moon: '+(G.fullMoon?'ON':'OFF'),'ok');}},
+  '/eclipse':    {desc:'Trigger solar eclipse event.',                fn:()=>{triggerEclipse();clog('🌑 Solar eclipse triggered!','warn');}},
+  '/frenzy':     {desc:'Trigger Fish Frenzy event.',                  fn:()=>{triggerWEvent('frenzy');clog('🐟 Fish Frenzy triggered!','warn');}},
+  '/bloodmoon':  {desc:'Trigger Blood Moon event.',                   fn:()=>{triggerWEvent('bmoon');clog('🩸 Blood Moon triggered!','warn');}},
+  '/meteor':     {desc:'Trigger Meteor Impact event.',                fn:()=>{triggerWEvent('meteor');clog('☄️ Meteor Impact triggered!','warn');}},
+  // Travel
+  '/goto':       {desc:'Travel to biome by ID. Usage: /goto river',  fn:(a)=>gotoBiomeCmd(a)},
+  '/unlock':     {desc:'List locked biomes.',                         fn:()=>lockedBiomesCmd()},
+  // Cheats / dev
+  '/addgold':    {desc:'Add gold. Usage: /addgold 500',               fn:(a)=>addGoldCmd(a)},
+  '/givebait':   {desc:'Add Prismatic Bait to pack.',                 fn:()=>{G.pack.push('rbait');clog('🌈 Prismatic Bait added to pack.','ok');renderPack();}},
+  '/luckboost':  {desc:'Activate luck boost for 5 min.',              fn:()=>{G.luckTimer=300;clog('🍀 Luck boost activated!','ok');}},
+  '/biomestreak':{desc:'Show all biome catch streaks.',               fn:()=>{const s=Object.entries(G.biomeStreak).map(([k,v])=>`${BIOMES.find(b=>b.id===k)?.name||k}:${v}`).join(' | ');clog('📍 Biome streaks: '+(s||'None'),'info');}},
+  '/resetstreak':{desc:'Reset current biome streak.',                 fn:()=>{G.biomeStreak[G.biome]=0;clog('♻️ Streak reset.','ok');}},
+  '/identify':   {desc:'Identify current fish on line.',              fn:()=>{if(curFish)clog('🔎 On line: '+curFish.name+' ('+curFish.rar+')','info');else clog('No fish on the line.','warn');}},
 };
 
 // ═══════════════════════════════════════════════
@@ -597,7 +658,116 @@ const G={
 
 let curFish=null, reelProg=0, ringR=88, ringDir=-1, ringSpd=.7;
 let ringRAF=null, fightIv=null, waitTO=null;
+let ringRAF_autoMiss=null, ringRAF_nextTO=null;
 let bossStage=0;
+
+function applyMissPenalty(){
+  if(G.phase!=='reeling')return;
+  // Flat 8–14% penalty on every miss regardless of rarity
+  const penalty=8+Math.random()*6;
+  reelProg=Math.max(0,reelProg-penalty);
+  syncBars();
+  setFightMsg('❌ Missed! -'+penalty.toFixed(1)+'%');
+  // Flash ring red
+  const ring=document.getElementById('rring');
+  ring.setAttribute('stroke','#e03030');
+  setTimeout(()=>{ if(G.phase==='reeling') ring.setAttribute('stroke','#e8734a'); },300);
+  // Check if fish escaped
+  if(reelProg<=0){
+    fishEscaped();
+  }
+}
+
+function fishEscaped(){
+  G.phase='idle';
+  if(ringRAF){cancelAnimationFrame(ringRAF);ringRAF=null;}
+  if(fightIv){clearInterval(fightIv);fightIv=null;}
+  clearTimeout(ringRAF_autoMiss); clearTimeout(ringRAF_nextTO);
+  trackActive=false;
+  if(trackRAF){cancelAnimationFrame(trackRAF);trackRAF=null;}
+  clearTimeout(trackTO); clearTimeout(trackReturnTO);
+  document.getElementById('track-wrap').style.display='none';
+  document.getElementById('ring-wrap').style.display='';
+  document.getElementById('rw').classList.remove('on');
+  document.getElementById('pbar').classList.remove('on');
+  bobVis=false;
+  curFish=null;
+  // Show escape message
+  setFightMsg('🐟 The fish got away!');
+  toast('🐟 The fish escaped!');
+  setTimeout(()=>{
+    document.getElementById('rw').classList.remove('on');
+    document.getElementById('pbar').classList.remove('on');
+    const cb=document.getElementById('castbtn');
+    cb.disabled=false; cb.textContent='🎣 Cast Line';
+    document.getElementById('fmsg').textContent='';
+  },1200);
+}
+
+function pressReel(){
+  if(G.phase!=='reeling')return;
+  if(trackActive)return;
+  clearTimeout(ringRAF_autoMiss); ringRAF_autoMiss=null;
+  clearTimeout(ringRAF_nextTO); ringRAF_nextTO=null;
+
+  const tt=(ringR-32)/56; // 0=closed(perfect) → 1=open(worst)
+  const score=1-tt;
+  const rod=RODS.find(r=>r.id===G.rod);
+  const lm=G.luckTimer>0?1.5:1;
+
+  if(score<0.15){
+    // Pressed when ring is barely moving — counts as a miss
+    applyMissPenalty();
+    if(G.phase==='reeling') scheduleNextRingCycle(700+Math.random()*400);
+    return;
+  }
+
+  const gain=score*(0.85+rod.pw*.05)*22*lm;
+  reelProg=Math.min(100,reelProg+gain);
+  syncBars();
+
+  const btn=document.getElementById('rbtn');
+  btn.setAttribute('fill',score>.8?'#42c060':score>.5?'#e8c040':'#e07030');
+  setTimeout(()=>btn.setAttribute('fill','#e8734a'),220);
+  setFightMsg(score>.8?'🎯 Perfect!':score>.5?'✅ Good!':'⚡ Close!');
+
+  if(curFish?.breakRod&&score<.3&&Math.random()<.22){
+    document.getElementById('rbwarn').textContent='⚠️ Your rod is straining!';
+    setTimeout(()=>document.getElementById('rbwarn').textContent='',2000);
+  }
+
+  if(reelProg>=100){
+    const bossStages=curFish.rar==='boss'?3:1;
+    if(bossStage<bossStages-1){
+      bossStage++; reelProg=20; syncBars();
+      document.getElementById('rhint').textContent=`Stage ${bossStage+1}/${bossStages} — Fight harder!`;
+      ringSpd*=1.22; setFightMsg('⚔️ Stage '+(bossStage+1)+'!');
+      scheduleNextRingCycle(400);
+    } else {landFish();}
+    return;
+  }
+
+  // Success — schedule next ring after brief pause
+  scheduleNextRingCycle(450+Math.random()*350);
+}
+
+// Helper: reset ring to full size and schedule the auto-miss timeout
+function scheduleNextRingCycle(delayMs){
+  ringR=88; ringDir=-1;
+  clearTimeout(ringRAF_nextTO);
+  ringRAF_nextTO=setTimeout(()=>{
+    if(G.phase!=='reeling') return;
+    // Time for ring to travel from r=88 to r=32 at ringSpd px/frame × 60fps
+    const msToClose=Math.round((56/ringSpd)*(1000/60));
+    clearTimeout(ringRAF_autoMiss);
+    ringRAF_autoMiss=setTimeout(()=>{
+      if(G.phase==='reeling'&&!trackActive){
+        applyMissPenalty();
+        if(G.phase==='reeling') scheduleNextRingCycle(600+Math.random()*400);
+      }
+    }, Math.max(500, msToClose));
+  }, delayMs);
+}
 
 // Canvas
 let PC, CTX, WC, WTX;
@@ -960,67 +1130,50 @@ function triggerBite(){
   document.getElementById('wmsg').classList.remove('on');
   curFish=pickFish();
   if(!curFish){toast('Nothing bit... try again!');resetIdle();return;}
-  reelProg=0; ringR=88; ringDir=-1;
-  const rarSpd={common:0,uncommon:.17,rare:.33,epic:.47,legendary:.6,boss:.75,secret:.3};
+  reelProg=20; // always start at 20%
+  ringR=88; ringDir=-1;
+  const rarSpd={common:0,uncommon:.15,rare:.3,epic:.45,legendary:.58,boss:.72,secret:.28};
   const rod=RODS.find(r=>r.id===G.rod);
-  ringSpd=Math.max(.28,.5+(rarSpd[curFish.rar]||0)-rod.sp*.024);
+  ringSpd=Math.max(.25,.42+(rarSpd[curFish.rar]||0)-rod.sp*.022);
   bossStage=0;
   document.getElementById('remi').textContent=curFish.em;
-  document.getElementById('rstat').innerHTML=`A <strong>${curFish.rar==='boss'?'⚠️ BOSS — ':''}</strong><strong>${curFish.name}</strong> is on the line!<small id="rhint">Press REEL when the ring is smallest!</small>`;
+  document.getElementById('rstat').innerHTML=`<strong>${curFish.rar==='boss'?'⚠️ BOSS — ':''}</strong><strong>${curFish.name}</strong> is on the line!<small id="rhint">Time the ring — miss and it gets away!</small>`;
   document.getElementById('rw').classList.add('on');
   document.getElementById('pbar').classList.add('on');
-  document.getElementById('rbar').style.width='0%';
-  document.getElementById('pfill').style.height='0%';
-  document.getElementById('pfish').style.bottom='3px';
+  document.getElementById('rbar').style.width='20%';
+  document.getElementById('pfill').style.height='20%';
+  document.getElementById('pfish').style.bottom='35px';
   document.getElementById('pfish').textContent=curFish.em;
   document.getElementById('rbtn').onclick=pressReel;
-  startRing(); startFight();
+  startRing();
+  startFight();
 }
 
 function startRing(){
   if(ringRAF)cancelAnimationFrame(ringRAF);
+  ringR=88; ringDir=-1;
+  ringRAF_autoMiss=null; ringRAF_nextTO=null;
+
   function step(){
     if(G.phase!=='reeling')return;
+    if(trackActive){ringRAF=requestAnimationFrame(step);return;}
     ringR+=ringDir*ringSpd;
-    if(ringR<=32){ringR=32;ringDir=1;}
-    if(ringR>=88){ringR=88;ringDir=-1;}
+    if(ringR<=32){ringR=32;ringDir=1;}   // bounce back up
+    if(ringR>=88){ringR=88;ringDir=-1;}  // top — scheduleNextRingCycle handles timeout
     const ring=document.getElementById('rring');
-    const circ=2*Math.PI*ringR;
     ring.setAttribute('r',ringR);
-    ring.setAttribute('stroke-dasharray',circ.toFixed(1));
+    ring.setAttribute('stroke-dasharray',(2*Math.PI*ringR).toFixed(1));
     const tt=(ringR-32)/56;
     ring.setAttribute('stroke',`rgb(${Math.round(80+tt*108)},${Math.round(220-tt*86)},${Math.round(120-tt*70)})`);
     ring.setAttribute('stroke-width',(5+(1-tt)*3).toFixed(1));
     ringRAF=requestAnimationFrame(step);
   }
+
+  // Kick off first cycle
+  scheduleNextRingCycle(0);
   ringRAF=requestAnimationFrame(step);
 }
 
-function pressReel(){
-  if(G.phase!=='reeling')return;
-  const tt=(ringR-32)/56;
-  const score=Math.max(.05,1-tt);
-  const rod=RODS.find(r=>r.id===G.rod);
-  const lm=G.luckTimer>0?1.5:1;
-  reelProg=Math.min(100,reelProg+score*(0.8+rod.pw*.05)*17*lm);
-  syncBars();
-  const btn=document.getElementById('rbtn');
-  btn.setAttribute('fill',score>.75?'#42c060':score>.45?'#e8c040':'#c04040');
-  setTimeout(()=>btn.setAttribute('fill','#e8734a'),200);
-  setFightMsg(score>.75?'🎯 Perfect!':score>.45?'Good!':'Too soon...');
-  if(curFish?.breakRod&&score<.28&&Math.random()<.25){
-    document.getElementById('rbwarn').textContent='⚠️ Your rod is straining!';
-    setTimeout(()=>document.getElementById('rbwarn').textContent='',2000);
-  }
-  if(reelProg>=100){
-    const bossStages=curFish.rar==='boss'?3:1;
-    if(bossStage<bossStages-1){
-      bossStage++;reelProg=0;syncBars();
-      document.getElementById('rhint').textContent=`Stage ${bossStage+1}/${bossStages} — Fight harder!`;
-      ringSpd*=1.28;setFightMsg('⚔️ Stage '+( bossStage+1)+'!');
-    } else {landFish();}
-  }
-}
 
 function syncBars(){
   document.getElementById('rbar').style.width=reelProg+'%';
@@ -1028,20 +1181,275 @@ function syncBars(){
   document.getElementById('pfish').style.bottom=Math.round((reelProg/100)*158+3)+'px';
 }
 
+// ─── DRAG-TRACK MINIGAME ─────────────────────────────────
+// State
+let trackActive=false;
+let trackRAF=null;
+let trackTO=null;
+let trackReturnTO=null;
+// Track physics
+let targetX=170;    // big circle X position on track
+let targetVx=0;     // big circle velocity
+let targetTx=170;   // big circle target destination
+let playerX=170;    // small circle X
+let playerVx=0;     // small circle velocity
+let playerAx=0;     // random jerk applied to player
+let trackShake={x:0,y:0}; // bar shake offset
+let trackShakeTime=0;
+let trackInsideTime=0;  // continuous time inside
+let trackOutsideTime=0; // continuous time outside
+// Config set per fish
+let TC={
+  barW:340, barH:60,
+  targetR:28, playerR:9,
+  targetSpd:1.2, targetWander:0.018,
+  playerJerk:0.8,
+  shakeMag:0, shakeFreq:0,
+  duration:4000,  // how long track phase lasts (ms)
+  moveTarget:false, // big circle wanders for especially rare fish
+};
+
+function getTrackConfig(){
+  const rarW={common:0,uncommon:1,rare:2,epic:3,legendary:4,boss:5,secret:3}[curFish.rar]||0;
+  const heaviness=Math.min(5,curFish.mx/50); // 0-5 scale
+  const intensity=rarW+heaviness;
+  return {
+    targetR: Math.max(14, 36-rarW*3.5),         // smaller = harder
+    playerR: 9,
+    targetSpd: 0.8+rarW*0.35+heaviness*0.12,    // how fast target moves
+    targetWander: 0.012+rarW*0.008,
+    playerJerk: 0.6+rarW*0.18+heaviness*0.06,   // how aggressively player drifts
+    shakeMag: Math.min(10, rarW*1.5+heaviness*0.8),
+    shakeFreq: 0.04+rarW*0.015,
+    duration: 3500+rarW*500,
+    moveTarget: intensity>=5,                    // boss/legendary big circle wanders
+    barW: 340,
+  };
+}
+
+function showTrack(){
+  if(!curFish)return;
+  if(trackActive)return;
+  trackActive=true;
+  TC=getTrackConfig();
+
+  // Measure actual canvas width
+  const cv=document.getElementById('track-canvas');
+  const rect=cv.parentElement.getBoundingClientRect();
+  const cw=Math.max(200,Math.floor(rect.width||340));
+  cv.width=cw; cv.height=60;
+  TC.barW=cw;
+
+  // Hide ring, show track
+  document.getElementById('ring-wrap').style.display='none';
+  document.getElementById('track-wrap').style.display='flex';
+
+  // Init positions
+  targetX=TC.barW/2;
+  targetVx=(Math.random()<.5?1:-1)*(TC.targetSpd*0.5);
+  targetTx=TC.barW/2+(Math.random()-.5)*(TC.barW*0.4);
+  playerX=TC.barW/2+(Math.random()-.5)*40;
+  playerVx=0; playerAx=0;
+  trackInsideTime=0; trackOutsideTime=0;
+  trackShakeTime=0;
+
+  // Update label
+  const intensity=['common','uncommon'].includes(curFish.rar)?'Hold steady!':['rare','epic'].includes(curFish.rar)?'It\'s fighting hard!':'⚠️ Massive resistance!';
+  document.getElementById('track-label').textContent=intensity;
+
+  // Start canvas loop
+  if(trackRAF)cancelAnimationFrame(trackRAF);
+  drawTrack();
+
+  // Schedule return to ring
+  clearTimeout(trackTO);
+  trackTO=setTimeout(()=>hideTrack(), TC.duration);
+}
+
+function hideTrack(){
+  if(!trackActive)return;
+  trackActive=false;
+  if(trackRAF){cancelAnimationFrame(trackRAF);trackRAF=null;}
+  clearTimeout(trackTO);
+  document.getElementById('track-wrap').style.display='none';
+  document.getElementById('ring-wrap').style.display='';
+  document.getElementById('track-status').textContent='';
+  // Schedule possible return to track
+  const reReq={common:0,uncommon:.12,rare:.35,epic:.55,legendary:.72,boss:.85,secret:.45}[curFish.rar]||0;
+  clearTimeout(trackReturnTO);
+  if(Math.random()<reReq&&G.phase==='reeling'){
+    const delay=2000+Math.random()*3000;
+    trackReturnTO=setTimeout(()=>{ if(G.phase==='reeling') showTrack(); }, delay);
+  }
+}
+
+function drawTrack(){
+  if(!trackActive){return;}
+  const cv=document.getElementById('track-canvas');
+  if(!cv)return;
+  const ctx2=cv.getContext('2d');
+  const W=cv.width, H=cv.height;
+  const dt=1/60;
+
+  // Shake bar
+  if(TC.shakeMag>0){
+    trackShakeTime+=dt;
+    trackShake.x=Math.sin(trackShakeTime*TC.shakeFreq*200)*TC.shakeMag*(0.6+Math.random()*.4);
+    trackShake.y=Math.cos(trackShakeTime*TC.shakeFreq*150)*TC.shakeMag*0.4*(0.6+Math.random()*.4);
+    const to=document.getElementById('track-outer');
+    to.style.transform=`translate(${trackShake.x.toFixed(1)}px,${trackShake.y.toFixed(1)}px)`;
+  }
+
+  // Move big target circle along bar
+  if(TC.moveTarget){
+    // Wander to a target destination
+    if(Math.abs(targetX-targetTx)<15||Math.random()<TC.targetWander){
+      targetTx=TC.playerR+TC.targetR+(Math.random()*(W-2*(TC.playerR+TC.targetR)));
+    }
+    const diff=targetTx-targetX;
+    targetVx+=(diff>0?1:-1)*TC.targetSpd*0.08;
+    targetVx*=0.88;
+  } else {
+    // Bounce between walls
+    targetX+=targetVx;
+    if(targetX<TC.targetR+2){targetX=TC.targetR+2;targetVx=Math.abs(targetVx)*(0.8+Math.random()*.4);}
+    if(targetX>W-TC.targetR-2){targetX=W-TC.targetR-2;targetVx=-Math.abs(targetVx)*(0.8+Math.random()*.4);}
+  }
+  if(TC.moveTarget){
+    targetX+=targetVx;
+    targetX=Math.max(TC.targetR+2,Math.min(W-TC.targetR-2,targetX));
+  }
+
+  // Player circle — drifts due to fish fighting
+  playerAx=(Math.random()-.5)*TC.playerJerk*2;
+  playerVx+=playerAx;
+  playerVx*=0.82;
+  playerX+=playerVx;
+  playerX=Math.max(TC.playerR+2,Math.min(W-TC.playerR-2,playerX));
+
+  // Check inside/outside
+  const dist=Math.abs(playerX-targetX);
+  const inside=dist<(TC.targetR-TC.playerR+2);
+  const rod=RODS.find(r=>r.id===G.rod);
+  const lm=G.luckTimer>0?1.5:1;
+
+  if(inside){
+    trackInsideTime+=dt;
+    trackOutsideTime=0;
+    // Gain progress slowly
+    const gain=0.06*(1+rod.pw*.03)*lm;
+    reelProg=Math.min(100,reelProg+gain);
+    syncBars();
+    if(trackInsideTime>0.5) document.getElementById('track-status').textContent='✅ Holding...';
+  } else {
+    trackOutsideTime+=dt;
+    trackInsideTime=0;
+    // Lose progress
+    const loss=0.12*(1+({uncommon:.5,rare:1,epic:1.6,legendary:2.2,boss:3,secret:1.2}[curFish.rar]||0)*.04);
+    reelProg=Math.max(0,reelProg-loss);
+    syncBars();
+    const urgency=trackOutsideTime>1.5?'⚠️ Getting away!':'↔️ Outside zone!';
+    document.getElementById('track-status').textContent=urgency;
+  }
+
+  // Draw
+  ctx2.clearRect(0,0,W,H);
+
+  // Bar background
+  const barY=H/2;
+  ctx2.fillStyle='rgba(255,255,255,0.07)';
+  ctx2.beginPath();ctx2.roundRect(0,barY-8,W,16,8);ctx2.fill();
+
+  // Progress tint on bar
+  const prog=reelProg/100;
+  const barGrad=ctx2.createLinearGradient(0,0,W,0);
+  barGrad.addColorStop(0,'rgba(232,115,74,0.3)');
+  barGrad.addColorStop(prog,'rgba(245,192,96,0.3)');
+  barGrad.addColorStop(prog,'rgba(255,255,255,0)');
+  barGrad.addColorStop(1,'rgba(255,255,255,0)');
+  ctx2.fillStyle=barGrad;
+  ctx2.beginPath();ctx2.roundRect(0,barY-8,W,16,8);ctx2.fill();
+
+  // Track line
+  ctx2.strokeStyle='rgba(255,255,255,0.2)';
+  ctx2.lineWidth=2;
+  ctx2.beginPath();ctx2.moveTo(10,barY);ctx2.lineTo(W-10,barY);ctx2.stroke();
+
+  // Big target circle — colour based on inside/outside
+  const tcol=inside?'rgba(80,220,140,0.85)':'rgba(232,115,74,0.75)';
+  const tglow=inside?'rgba(80,220,140,0.3)':'rgba(232,80,40,0.25)';
+  // Glow
+  ctx2.shadowColor=inside?'#50dc8c':'#e8734a';
+  ctx2.shadowBlur=inside?16:8;
+  ctx2.strokeStyle=tcol;
+  ctx2.lineWidth=inside?3:2.5;
+  ctx2.beginPath();ctx2.arc(targetX,barY,TC.targetR,0,Math.PI*2);ctx2.stroke();
+  ctx2.shadowBlur=0;
+  ctx2.fillStyle=tglow;
+  ctx2.beginPath();ctx2.arc(targetX,barY,TC.targetR,0,Math.PI*2);ctx2.fill();
+
+  // Player circle
+  const pcol=inside?'#60f0a0':'#f0c040';
+  ctx2.shadowColor=pcol;
+  ctx2.shadowBlur=inside?12:6;
+  ctx2.fillStyle=pcol;
+  ctx2.beginPath();ctx2.arc(playerX,barY,TC.playerR,0,Math.PI*2);ctx2.fill();
+  ctx2.strokeStyle='rgba(255,255,255,0.7)';
+  ctx2.lineWidth=1.5;
+  ctx2.beginPath();ctx2.arc(playerX,barY,TC.playerR,0,Math.PI*2);ctx2.stroke();
+  ctx2.shadowBlur=0;
+
+  // Distance indicator arrows at edges when outside
+  if(!inside){
+    const dir=playerX<targetX?1:-1;
+    ctx2.fillStyle='rgba(255,200,100,0.8)';
+    const ax=dir>0?targetX-TC.targetR-18:targetX+TC.targetR+18;
+    ctx2.beginPath();
+    if(dir>0){ctx2.moveTo(ax,barY);ctx2.lineTo(ax-10,barY-6);ctx2.lineTo(ax-10,barY+6);}
+    else{ctx2.moveTo(ax,barY);ctx2.lineTo(ax+10,barY-6);ctx2.lineTo(ax+10,barY+6);}
+    ctx2.fill();
+  }
+
+  if(reelProg>=100&&G.phase==='reeling'){
+    const bossStages=curFish.rar==='boss'?3:1;
+    if(bossStage<bossStages-1){
+      bossStage++;reelProg=0;syncBars();
+      document.getElementById('rhint').textContent=`Stage ${bossStage+1}/${bossStages} — Fight harder!`;
+      ringSpd*=1.28;
+    } else {
+      trackActive=false;
+      cancelAnimationFrame(trackRAF);
+      landFish();return;
+    }
+  }
+
+  trackRAF=requestAnimationFrame(drawTrack);
+}
+
 function startFight(){
   if(fightIv)clearInterval(fightIv);
-  const str={common:.07,uncommon:.17,rare:.31,epic:.44,legendary:.57,boss:.7,secret:.14}[curFish.rar]||.2;
+  const rarStr={common:.07,uncommon:.17,rare:.31,epic:.44,legendary:.57,boss:.7,secret:.14}[curFish.rar]||.2;
+
+  // Determine if this fish should trigger the track minigame during fights
+  // Rare+ fish always get it; uncommon sometimes; common never
+  const trackChance={common:0,uncommon:.3,rare:.7,epic:.9,legendary:1,boss:1,secret:.8}[curFish.rar]||0;
+
   fightIv=setInterval(()=>{
     if(G.phase!=='reeling'){clearInterval(fightIv);return;}
-    if(Math.random()<.42){
-      let pull=str*(8+Math.random()*12);
+    if(Math.random()<.4){
+      let pull=rarStr*(8+Math.random()*12);
       if(curFish.rar==='boss'&&Math.random()<.06){reelProg=0;pull=0;setFightMsg('💥 Line snapped! Reset!');}
       else{reelProg=Math.max(0,reelProg-pull);syncBars();}
       const msgs={boss:['⚡ Massive pull!','💥 It surges!','⚡ FIGHT BACK!'],legendary:['💪 Huge pull!','🌊 Powerful!'],rare:['💪 Fish pulls!'],common:['~splash~']};
       const m=(msgs[curFish.rar]||msgs.common);
       setFightMsg(m[Math.floor(Math.random()*m.length)]);
+
+      // Trigger track minigame on fight-back if not already active
+      if(!trackActive&&Math.random()<trackChance&&G.phase==='reeling'){
+        showTrack();
+      }
     }
-  },curFish.rar==='boss'?750:1150);
+  }, curFish.rar==='boss'?700:1100);
 }
 
 function setFightMsg(m){
@@ -1069,6 +1477,14 @@ function landFish(){
   G.phase='caught';
   if(ringRAF){cancelAnimationFrame(ringRAF);ringRAF=null;}
   if(fightIv){clearInterval(fightIv);fightIv=null;}
+  clearTimeout(ringRAF_autoMiss); clearTimeout(ringRAF_nextTO);
+  // Clean up track
+  trackActive=false;
+  if(trackRAF){cancelAnimationFrame(trackRAF);trackRAF=null;}
+  clearTimeout(trackTO); clearTimeout(trackReturnTO);
+  document.getElementById('track-wrap').style.display='none';
+  document.getElementById('ring-wrap').style.display='';
+  document.getElementById('track-outer').style.transform='';
   bobVis=false;
   document.getElementById('rw').classList.remove('on');
   document.getElementById('pbar').classList.remove('on');
@@ -1136,6 +1552,14 @@ function sellCaught(){
 }
 function resetIdle(){
   G.phase='idle'; curFish=null;
+  clearTimeout(ringRAF_autoMiss); clearTimeout(ringRAF_nextTO);
+  trackActive=false;
+  if(ringRAF){cancelAnimationFrame(ringRAF);ringRAF=null;}
+  if(trackRAF){cancelAnimationFrame(trackRAF);trackRAF=null;}
+  clearTimeout(trackTO); clearTimeout(trackReturnTO);
+  document.getElementById('track-wrap').style.display='none';
+  document.getElementById('ring-wrap').style.display='';
+  if(document.getElementById('track-outer')) document.getElementById('track-outer').style.transform='';
   const cb=document.getElementById('castbtn');
   cb.disabled=false; cb.textContent='🎣 Cast Line';
 }
@@ -1217,21 +1641,35 @@ function pickFish(){
     const hi=pool.filter(f=>['rare','epic','legendary'].includes(f.rar));
     if(hi.length)return hi[Math.floor(Math.random()*hi.length)];
   }
-  // Weights
-  const bw={common:50,uncommon:28,rare:12,epic:6,legendary:3,secret:1};
+  // Base weights matching target percentages:
+  // common 50%, uncommon 20%, rare 5%, epic 2%, legendary 0.5%, secret 0.05%, boss 0.01%
+  // We use a pool-normalised approach: assign each fish a base weight from its rarity tier,
+  // then apply rod/upgrade bonuses as multipliers on top.
+  const bw={common:500,uncommon:200,rare:50,epic:20,legendary:5,secret:0.5,boss:0.1};
   const weighted=pool.map(f=>{
-    let w=bw[f.rar]||5;
-    if(f.rar==='rare')w+=rod.lk*.5+(G.upg.lure?2:0);
-    if(f.rar==='epic')w+=rod.lk*.3;
-    if(f.rar==='legendary')w+=rod.lk*.2+(G.upg.mbait?2:0);
-    if(f.rar==='secret')w+=G.rod==='celestial'?.5:0;
-    if(f.rar==='common')w-=rod.lk*.3;
-    if(G.event==='frenzy')w*=2;
-    if(G.event==='bmoon'&&['rare','epic','legendary'].includes(f.rar))w*=1.8;
-    if(G.rod==='storm'&&f.wx==='storm')w*=2;
-    if(G.rod==='abyss'&&f.bio.includes('deepocean'))w*=1.5;
-    if(G.rod==='bamboo'&&f.rar==='uncommon')w*=1.3;
-    return{f,w:Math.max(.1,w)};
+    let w=bw[f.rar]||1;
+    // Rod luck bonuses scale the rarer tiers up (reducing common weight relatively)
+    const lkBonus=rod.lk; // 1–10
+    if(f.rar==='uncommon') w+=lkBonus*8;
+    if(f.rar==='rare')     w+=lkBonus*5+(G.upg.lure?15:0);
+    if(f.rar==='epic')     w+=lkBonus*3;
+    if(f.rar==='legendary')w+=lkBonus*1.5+(G.upg.mbait?8:0);
+    if(f.rar==='secret')   w+=G.rod==='celestial'?0.3:0;
+    if(f.rar==='common')   w=Math.max(50,w-lkBonus*6); // luck reduces common pull
+    // Rod special bonuses
+    if(G.rod==='bamboo'&&f.rar==='uncommon')w*=1.4;
+    if(G.rod==='storm'&&f.wx==='storm')     w*=2.5;
+    if(G.rod==='abyss'&&f.bio.includes('deepocean'))w*=1.8;
+    if(G.rod==='crystal'&&['rare','epic'].includes(f.rar))w*=1.3;
+    if(G.rod==='frostbite'&&(f.bio.includes('frozen')||f.bio.includes('coldr')))w*=1.5;
+    if(G.rod==='celestial'&&['legendary','secret'].includes(f.rar))w*=2;
+    // World events
+    if(G.event==='frenzy') w*=2;
+    if(G.event==='bmoon'&&['rare','epic','legendary'].includes(f.rar))w*=2.5;
+    if(G.event==='meteor') w*=1.5;
+    // Luck upgrade items
+    if(G.luckTimer>0) w*=(f.rar==='common'?0.85:1.3);
+    return{f,w:Math.max(0.01,w)};
   });
   const tot=weighted.reduce((s,x)=>s+x.w,0);
   let rv=Math.random()*tot;
@@ -1580,47 +2018,220 @@ function updateRodCard(){
 }
 
 // ═══════════════════════════════════════════════
-// COMMANDS
+// CONSOLE SYSTEM
 // ═══════════════════════════════════════════════
+let consoleOpen=false;
+let consoleHistory=[];
+let consoleHistIdx=-1;
+
+function toggleConsole(){
+  consoleOpen=!consoleOpen;
+  const el=document.getElementById('console-overlay');
+  el.classList.toggle('open',consoleOpen);
+  if(consoleOpen){
+    clog('Corner Pond Console — type /help for commands','sys');
+    clog('Press ` (backtick) or Escape to close.','sys');
+    setTimeout(()=>document.getElementById('console-input').focus(),50);
+  }
+}
+
+function handleConsoleKey(e){
+  if(e.key==='Enter'){execConsoleCmd();return;}
+  if(e.key==='Escape'){toggleConsole();return;}
+  if(e.key==='ArrowUp'){
+    if(consoleHistIdx<consoleHistory.length-1){
+      consoleHistIdx++;
+      document.getElementById('console-input').value=consoleHistory[consoleHistIdx]||'';
+    }
+    e.preventDefault();return;
+  }
+  if(e.key==='ArrowDown'){
+    if(consoleHistIdx>0){consoleHistIdx--;document.getElementById('console-input').value=consoleHistory[consoleHistIdx]||'';}
+    else{consoleHistIdx=-1;document.getElementById('console-input').value='';}
+    e.preventDefault();return;
+  }
+  // Tab autocomplete
+  if(e.key==='Tab'){
+    e.preventDefault();
+    const inp=document.getElementById('console-input');
+    const v=inp.value.trim();
+    const match=Object.keys(COMMANDS).find(k=>k.startsWith(v));
+    if(match)inp.value=match+' ';
+    return;
+  }
+}
+
+function execConsoleCmd(){
+  const inp=document.getElementById('console-input');
+  const raw=inp.value.trim();
+  if(!raw)return;
+  inp.value='';
+  consoleHistory.unshift(raw);
+  consoleHistIdx=-1;
+  clog('$> '+raw,'cmd');
+  runCmd(raw);
+}
+
+function clog(msg,type='ok'){
+  const log=document.getElementById('console-log');
+  if(!log)return;
+  const d=document.createElement('div');
+  d.className='cline '+(type||'ok');
+  d.textContent=msg;
+  log.appendChild(d);
+  log.scrollTop=log.scrollHeight;
+}
+
+function clearConsole(){
+  const log=document.getElementById('console-log');
+  if(log)log.innerHTML='';
+  clog('Console cleared.','sys');
+}
+
 function runCmd(raw){
-  const input=document.getElementById('cmdinput');
-  const cmd=(raw||'').trim().toLowerCase();
-  if(!cmd){return;}
-  input.value='';
-  if(COMMANDS[cmd]){COMMANDS[cmd].fn();return;}
+  const parts=(raw||'').trim().split(/\s+/);
+  const cmd=parts[0].toLowerCase();
+  const arg=parts.slice(1).join(' ');
+  if(!cmd)return;
+  if(COMMANDS[cmd]){
+    try{COMMANDS[cmd].fn(arg);}
+    catch(e){clog('Error: '+e.message,'err');}
+    return;
+  }
   // Partial match
   const match=Object.keys(COMMANDS).find(k=>k.startsWith(cmd));
-  if(match){COMMANDS[match].fn();return;}
-  cmdToast('❓ Unknown command. Type /help for a list.');
+  if(match){
+    try{COMMANDS[match].fn(arg);}
+    catch(e){clog('Error: '+e.message,'err');}
+    return;
+  }
+  clog('Unknown command: '+cmd+'. Type /help for a list.','err');
 }
 
-function cmdToast(m){
-  // Use the main toast but with a slightly different prefix so it's clearly a command response
-  toast('📟 '+m);
-}
-
+// ── Command implementations ──
 function showCmdHelp(){
-  const el=document.getElementById('helplist');
-  el.innerHTML=Object.entries(COMMANDS).map(([k,v])=>
-    `<div style="display:flex;gap:6px;padding:2px 0;border-bottom:1px solid rgba(0,0,0,.05);">
-      <code style="color:var(--wdd);font-weight:700;min-width:90px;font-size:10px;">${k}</code>
-      <span style="color:var(--txm);font-size:10px;">${v.desc}</span>
-    </div>`
-  ).join('');
-  document.getElementById('helppop').classList.add('on');
+  clog('═══ Available Commands ═══','sys');
+  const cats={
+    'ℹ️  Info':    ['/help','/gold','/time','/weather','/biome','/rod','/caught','/streak','/bag','/stats','/mods','/materials','/trophies','/fish','/biomes','/rods','/upgrades','/version','/identify'],
+    '⏰  Time':    ['/dawn','/morning','/noon','/afternoon','/evening','/dusk','/night','/midnight','/timespeed'],
+    '🌦️  Weather': ['/sunny','/rain','/storm','/fog','/snow'],
+    '✨  Events':  ['/fullmoon','/eclipse','/frenzy','/bloodmoon','/meteor'],
+    '🗺️  Travel':  ['/goto','/unlock','/biomestreak','/resetstreak'],
+    '💰  Economy': ['/sellall','/sell','/addgold','/givebait'],
+    '⚙️  Utils':   ['/luckboost','/clear'],
+  };
+  for(const [cat,cmds] of Object.entries(cats)){
+    clog(cat,'sys');
+    cmds.forEach(c=>{const cmd=COMMANDS[c];if(cmd)clog(`  ${c.padEnd(14)} — ${cmd.desc}`,'info');});
+  }
+  clog('Tip: Tab autocompletes. ↑↓ for history.','sys');
 }
 
-function showModsCmd(){
-  const found=MODIFIERS.filter(m=>G.discoveredMods[m.id]);
-  if(!found.length){cmdToast('No modifiers discovered yet!');return;}
-  cmdToast('✨ Modifiers: '+found.map(m=>m.em+' '+m.name).join(', '));
-}
-
-function showMatsCmd(){
+function statsCmd(){
+  clog('═══ Player Stats ═══','sys');
+  clog(`🪙 Gold: ${G.gold}`,'info');
+  clog(`🐟 Caught: ${G.caught} | Sold: ${G.sold} | Streak: ${G.streak}`,'info');
+  clog(`🎣 Rod: ${RODS.find(r=>r.id===G.rod)?.name}`,'info');
+  clog(`📍 Biome: ${BIOMES.find(b=>b.id===G.biome)?.name}`,'info');
+  clog(`🌦️ Weather: ${G.wx} | Time: ${document.getElementById('time-disp').textContent}`,'info');
+  clog(`🔮 Notes found: ${Object.keys(G.notes).length} | Mods found: ${Object.keys(G.discoveredMods).length}`,'info');
   const mats=Object.entries(G.mats);
-  if(!mats.length){cmdToast('No boss materials collected yet.');return;}
-  cmdToast('🧪 Materials: '+mats.map(([n,c])=>n+' ×'+c).join(', '));
+  if(mats.length)clog('🧪 Materials: '+mats.map(([n,c])=>n+'×'+c).join(', '),'info');
 }
+
+function listBagCmd(){
+  if(!G.bag.length){clog('🎒 Bag is empty.','warn');return;}
+  clog(`🎒 Bag (${G.bag.length} fish):`,'info');
+  G.bag.forEach((e,i)=>{
+    const f=FISH.find(x=>x.id===e.id);
+    const mod=e.mod?MODIFIERS.find(m=>m.id===e.mod):null;
+    clog(`  [${i}] ${mod?mod.em:''}${f?.name||e.id} — ${e.w}kg — ${e.p}🪙`,'ok');
+  });
+}
+
+function discoveredCmd(){
+  const found=FISH.filter(f=>G.disc[f.id]?.count>0);
+  if(!found.length){clog('No fish discovered yet.','warn');return;}
+  clog(`🐟 Discovered (${found.length}/${FISH.length}):`,'info');
+  found.forEach(f=>{const d=G.disc[f.id];clog(`  ${f.em} ${f.name} [${f.rar}] — ×${d.count} best:${d.best}kg`,'ok');});
+}
+
+function biomesCmd(){
+  clog('═══ Biomes ═══','sys');
+  BIOMES.forEach(b=>{
+    const own=G.biomes[b.id];
+    const status=!own?.unlocked?`🔒 ${b.price}🪙`:!own?.lic&&!G.upg.glic?'⚠️ No licence':'✅';
+    const active=G.biome===b.id?' ← CURRENT':'';
+    clog(`  ${b.em} ${b.name.padEnd(18)} ${status}${active}`,'info');
+  });
+}
+
+function rodsCmd(){
+  clog('═══ Rods ═══','sys');
+  RODS.forEach(r=>{
+    const status=G.rods[r.id]?(G.rod===r.id?'✅ Equipped':'Owned'):'🔒 '+r.price+'🪙';
+    clog(`  ${r.name.padEnd(18)} ${status} | ⚡${r.pw} 🌀${r.sp} 🍀${r.lk}`,'info');
+  });
+}
+
+function upgradesCmd(){
+  clog('═══ Upgrades ═══','sys');
+  UPGRADES.forEach(u=>{
+    const status=G.upg[u.id]?'✅ Owned':'🔒 '+u.price+'🪙';
+    clog(`  ${u.name.padEnd(18)} ${status}`,'info');
+  });
+}
+
+function modsCmd(){
+  const found=MODIFIERS.filter(m=>G.discoveredMods[m.id]);
+  if(!found.length){clog('No modifiers discovered yet.','warn');return;}
+  clog('═══ Discovered Modifiers ═══','sys');
+  found.forEach(m=>{
+    let total=0;Object.values(G.disc).forEach(d=>{if(d.mods&&d.mods[m.id])total+=d.mods[m.id];});
+    clog(`  ${m.em} ${m.name.padEnd(12)} ×${total} — Wt×${m.wMult} Price×${m.pMult}`,'info');
+  });
+}
+
+function matesCmd(){
+  const mats=Object.entries(G.mats);
+  if(!mats.length){clog('No boss materials collected yet.','warn');return;}
+  clog('═══ Materials ═══','sys');
+  mats.forEach(([n,c])=>clog(`  🧪 ${n} ×${c}`,'info'));
+}
+
+function lockedBiomesCmd(){
+  const locked=BIOMES.filter(b=>!G.biomes[b.id]?.unlocked);
+  if(!locked.length){clog('All biomes unlocked!','ok');return;}
+  clog('═══ Locked Biomes ═══','sys');
+  locked.forEach(b=>clog(`  ${b.em} ${b.name} — 🔒${b.price}🪙 + 📜${b.lic}🪙${b.boat?' + 🚣 Boat':''}`,'warn'));
+}
+
+function gotoBiomeCmd(id){
+  if(!id){clog('Usage: /goto <biome_id>  (e.g. /goto river)','err');return;}
+  const b=BIOMES.find(x=>x.id===id);
+  if(!b){clog('Unknown biome: '+id,'err');biomesCmd();return;}
+  if(!G.biomes[id]?.unlocked){clog('Biome not unlocked: '+b.name,'err');return;}
+  if(!G.biomes[id]?.lic&&!G.upg.glic){clog('No licence for: '+b.name,'err');return;}
+  goTo(id);
+  clog('⛵ Travelled to '+b.name,'ok');
+}
+
+function addGoldCmd(arg){
+  const n=parseInt(arg);
+  if(isNaN(n)||n<=0){clog('Usage: /addgold <amount>  (positive integer)','err');return;}
+  G.gold+=n;updateUI();
+  clog('🪙 Added '+n+' gold. Total: '+G.gold,'ok');
+}
+
+function timeSpeedCmd(arg){
+  const n=parseFloat(arg);
+  if(isNaN(n)||n<0.1||n>20){clog('Usage: /timespeed <0.1–20>  (2 = default)','err');return;}
+  G.tspd=n;
+  clog('⏰ Time speed set to '+n+'x','ok');
+}
+
+function cmdToast(m){toast('📟 '+m);}
+// (keep for backwards compat with any remaining calls)
 
 // ═══════════════════════════════════════════════
 // ECLIPSE EVENT
@@ -1673,7 +2284,6 @@ function checkGuardianBoss(){
 // INIT
 // ═══════════════════════════════════════════════
 window.addEventListener('load',()=>{
-  // Canvas init after layout paint
   requestAnimationFrame(()=>{
     requestAnimationFrame(()=>{
       initCanvas();
@@ -1686,6 +2296,20 @@ window.addEventListener('load',()=>{
   updateTimeDom();
   setWx('clear');
   startTick();
+
+  // Backtick opens console; Escape closes it
+  document.addEventListener('keydown',(e)=>{
+    if(e.key==='`'||e.key==='~'){e.preventDefault();toggleConsole();return;}
+    if(e.key==='Escape'&&consoleOpen){e.preventDefault();toggleConsole();return;}
+    // Space bar triggers pressReel when reeling and console is closed
+    if(e.key===' '&&!consoleOpen&&G.phase==='reeling'){
+      e.preventDefault();
+      pressReel();
+      return;
+    }
+  });
+  // Boot message in console log (pre-populated for when user opens it)
+  clog('Corner Pond Console ready. Press ` to toggle.','sys');
 });
 </script>
 </body>
