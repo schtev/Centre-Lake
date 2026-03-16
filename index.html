@@ -2,8 +2,28 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Corner Pond">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#5c4228">
+<meta name="description" content="A relaxing fishing game. Cast your line, catch rare fish, explore biomes.">
 <title>Corner Pond</title>
+<!-- Inline SVG favicon -->
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🎣</text></svg>">
+<link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%235c4228'/><text y='135' x='14' font-size='130'>🎣</text></svg>">
+<!-- Inline Web App Manifest -->
+<script>
+(function(){
+  const manifest={name:'Corner Pond',short_name:'Corner Pond',description:'A relaxing fishing game',start_url:'.',display:'standalone',background_color:'#1a1208',theme_color:'#5c4228',orientation:'landscape',icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%235c4228'/><text y='400' x='40' font-size='420'>🎣</text></svg>",sizes:'512x512',type:'image/svg+xml'}]};
+  const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  const url=URL.createObjectURL(blob);
+  const link=document.createElement('link');
+  link.rel='manifest';link.href=url;
+  document.head.appendChild(link);
+})();
+</script>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
 <style>
 :root{
@@ -534,6 +554,8 @@ const FISH=[
   {id:'lanteel',    em:'🟢',name:'Lantern Eel',          rar:'secret',   price:2600,mn:5.0,mx:6.8, bio:['trench','canal'],         tm:TN,            sc:'glowbait',       desc:'A long eel that follows light sources through dark waters.',info:'Requires active Glowing Bait during night fishing. The light draws it up from the dark.',                    note:{bio:['trench','canal'],clue:"In the deepest darkness something follows light. Bring your own glow to the dark water and wait."}},
   {id:'kccarp',     em:'🐠',name:'King\'s Coin Carp',    rar:'secret',   price:3500,mn:15.9,mx:18.1,bio:['temple','clake'],        tm:['dusk','evening'],sc:'golden_koi_caught',desc:'Said to appear only when fortune favors the angler.',info:'Catch a Golden Koi first, then fish at dusk or evening in temple ponds or calm lakes.',                  note:{bio:['temple','clake'],clue:"The old monks say: catch the gold first. Then at twilight, something even rarer answers the call of fortune."}},
   {id:'echopike',   em:'🐟',name:'Echo Pike',            rar:'secret',   price:3100,mn:22.7,mx:29.5,bio:['mtnriver'],              tm:TDW,           sc:'same_spot_5',    desc:'A territorial predator that only attacks persistent anglers.',info:'Cast in the same Mountain River spot 5 times in a row without travelling away.',                            note:{bio:['mtnriver'],clue:"The mountain pike remembers faces. Return to the same cold bend five times at dawn and it will finally challenge you."}},
+  {id:'shadowcarp', em:'🐟',name:'Shadow Ripple Carp',   rar:'secret',   price:3400,mn:11.8,mx:14.5,bio:['clake','pond','frozen'],  tm:['midnight'],  sc:'three_miss_zones',desc:'A mysterious carp that surfaces only when the lake falls completely silent.',info:'Cast in 3 different zones of the lake without catching anything, then cast near the centre at midnight.',note:{bio:['clake','pond','frozen'],clue:"Some fish fear noise more than bait. The water must settle before certain creatures rise. An old angler once said the lake rewards patience and quiet."}},
+  {id:'runestone',  em:'🐡',name:'Runestone Salmon',     rar:'secret',   price:3600,mn:18.1,mx:21.8,bio:['mtnriver'],              tm:TDW,           sc:'upstream_order',  desc:'This ancient salmon follows the path of the river. Its scales are etched with rune-like patterns.',info:'Cast upstream, then midstream, then downstream in sequence — then cast again at dawn.',note:{bio:['mtnriver'],clue:"Follow the river's path and the old spirit may appear. Start where the current is strongest and end where it slows. Three casts guide the guardian."}},
 ];
 
 const RODS=[
@@ -593,6 +615,10 @@ const NPC_HINTS=[
   {bio:['pond','clake','temple'],txt:'"Full moon nights feel magical here. Something glows in the shallows."'},
   {bio:['mtnriver'],   txt:'"Fish these cold waters long enough and something ancient will notice you."'},
   {bio:['swamp','river'],txt:'"Old rivermen speak of something pale at the crossing stones when the water goes still."'},
+  {bio:['clake','pond','frozen'],txt:'"Some fish fear noise more than bait. The water must settle before certain creatures rise."'},
+  {bio:['clake','pond'],txt:'"An old angler once said the lake rewards patience and quiet. Stop casting. Just wait."'},
+  {bio:['mtnriver'],   txt:'"Follow the river\'s path and the old spirit may appear. Start where the current is strongest."'},
+  {bio:['mtnriver'],   txt:'"Three casts guide the guardian — but the order matters. The river remembers."'},
 ];
 
 // ─── MODIFIERS ───────────────────────────────────
@@ -667,6 +693,10 @@ const COMMANDS={
   '/biomestreak':{desc:'Show all biome catch streaks.',               fn:()=>{const s=Object.entries(G.biomeStreak).map(([k,v])=>`${BIOMES.find(b=>b.id===k)?.name||k}:${v}`).join(' | ');clog('📍 Biome streaks: '+(s||'None'),'info');}},
   '/resetstreak':{desc:'Reset current biome streak.',                 fn:()=>{G.biomeStreak[G.biome]=0;clog('♻️ Streak reset.','ok');}},
   '/identify':   {desc:'Identify current fish on line.',              fn:()=>{if(curFish)clog('🔎 On line: '+curFish.name+' ('+curFish.rar+')','info');else clog('No fish on the line.','warn');}},
+  '/puzzles':    {desc:'Show current puzzle progress.',               fn:()=>puzzlesCmd()},
+  '/misszone':   {desc:'Show Shadow Ripple Carp miss zone progress.', fn:()=>missZoneCmd()},
+  '/riverseq':   {desc:'Show Runestone Salmon cast sequence.',        fn:()=>riverSeqCmd()},
+  '/resetpuzzle':{desc:'Reset all puzzle tracking states.',           fn:()=>{G.missZonesHit=new Set();G.riverCastOrder=[];G.sameSpotCasts=0;G.idleTime=0;clog('♻️ All puzzle states reset.','ok');}},
   // Force / cheat commands
   '/forcenext':  {desc:'Force next catch to specific fish. Usage: /forcenext bass',  fn:(a)=>forceNextCmd(a)},
   '/forcerare':  {desc:'Next catch guaranteed Rare or better.',       fn:()=>{G.forceRare=true;clog('🌟 Next catch will be Rare+!','ok');}},
@@ -715,6 +745,11 @@ const G={
   sameSpotCasts:0,       // casts without biome change (Echo Pike)
   lastCatchIds:[],       // last 3 fish IDs caught (Mirror Carp 3-different)
   caughtGoldenKoi:false, // ever caught Golden Koi (King's Coin Carp)
+  // Cast zone puzzle tracking
+  castZoneHistory:[],     // last N cast zones (for Shadow Ripple Carp)
+  missZonesHit:new Set(), // distinct zones cast in WITHOUT catching (Shadow Ripple)
+  riverCastOrder:[],      // upstream/mid/downstream cast sequence (Runestone Salmon)
+  lastCastZone:null,      // zone of most recent cast ('top','mid','bot','center','lake_center')
   mats:{},
   cfilt:'all',
   seed:Math.floor(Math.random()*99999),
@@ -978,9 +1013,38 @@ function drawPond(dt){
     CTX.beginPath();CTX.arc(bobX,bobY,8+rp*13,0,Math.PI*2);
     CTX.strokeStyle=`rgba(100,200,180,${.45*(1-rp)})`;CTX.lineWidth=1;CTX.stroke();
   }
+  // Cast zone flash indicator
+  if(G._castZoneFlash&&G._castZoneFlash.t>0){
+    const f=G._castZoneFlash;
+    f.t-=0.025;
+    const alpha=Math.min(1,f.t*3);
+    const r=22+(1-Math.max(0,f.t))*28;
+    CTX.globalAlpha=alpha;
+    CTX.strokeStyle='rgba(255,240,120,0.85)';
+    CTX.lineWidth=2;
+    CTX.beginPath();CTX.arc(f.x,f.y,r,0,Math.PI*2);CTX.stroke();
+    CTX.fillStyle='rgba(255,240,120,0.9)';
+    CTX.font='bold 10px Nunito,sans-serif';
+    CTX.textAlign='center'; CTX.textBaseline='bottom';
+    CTX.fillText(f.zone,f.x,f.y-r-3);
+    CTX.globalAlpha=1; CTX.textAlign='left';
+  }
+  // Hover cursor hint when idle — show a subtle cursor circle following mouse over water
+  if(G.phase==='idle'&&G._hoverX!==undefined){
+    const hx=G._hoverX,hy=G._hoverY;
+    const wx2=W*.5,wy2=H*.45,wrx2=W*.35,wry2=H*.3;
+    const dx2=(hx-wx2)/wrx2,dy2=(hy-wy2)/wry2;
+    if(dx2*dx2+dy2*dy2<=1.0){
+      CTX.globalAlpha=0.4;
+      CTX.strokeStyle='rgba(200,230,255,0.7)';
+      CTX.lineWidth=1.5;
+      CTX.setLineDash([4,3]);
+      CTX.beginPath();CTX.arc(hx,hy,12,0,Math.PI*2);CTX.stroke();
+      CTX.setLineDash([]);
+      CTX.globalAlpha=1;
+    }
+  }
 }
-
-function drawDock(W,H){
   const dx=W*.44,dy=H*.63,dw=W*.13,dh=H*.024;
   CTX.fillStyle='#8b6b42';CTX.beginPath();CTX.roundRect(dx,dy,dw,dh,3);CTX.fill();
   CTX.fillStyle='#a07848';CTX.fillRect(dx-.01*W,dy-.005*H,dw+.02*W,dh*.35);
@@ -1177,18 +1241,76 @@ function showBanner(msg,col){
 // ═══════════════════════════════════════════════
 // FISHING
 // ═══════════════════════════════════════════════
-function castLine(){
+// Classify click position into zones based on biome type
+function classifyZone(xFrac, yFrac, biome){
+  // xFrac, yFrac: 0-1 relative position on canvas
+  // For lakes: divide into 9 grid zones (3x3)
+  // For rivers: divide into 3 vertical strips (upstream=top, mid=middle, downstream=bottom)
+  const isRiver=['river','mtnriver','coldr'].includes(biome);
+  if(isRiver){
+    if(yFrac<0.38) return 'upstream';
+    if(yFrac<0.62) return 'midstream';
+    return 'downstream';
+  } else {
+    // Lake/ocean: 3x3 grid
+    const col=xFrac<0.38?'left':xFrac<0.62?'center':'right';
+    const row=yFrac<0.38?'top':yFrac<0.62?'mid':'bot';
+    if(col==='center'&&row==='mid') return 'lake_center';
+    return `${row}_${col}`;
+  }
+}
+
+function castLine(clickX, clickY){
   if(G.phase!=='idle')return;
   const bi=G.biomes[G.biome];
   if(!bi?.lic&&!G.upg.glic){toast('⚠️ You need a fishing licence here!');return;}
   G.phase='waiting';
-  G.sameSpotCasts++;  // track consecutive casts in same spot
-  G.idleTime=0;       // reset idle on cast
+  G.sameSpotCasts++;
+  G.idleTime=0;
+
+  const W=PC.width,H=PC.height;
+
+  // Place bobber at click position if provided, otherwise random in water area
+  if(clickX!==undefined&&clickY!==undefined){
+    // Constrain to water ellipse (rough check)
+    const cx=W*.5, cy=H*.45, rx=W*.32, ry=H*.27;
+    const dx=(clickX-cx)/rx, dy=(clickY-cy)/ry;
+    if(dx*dx+dy*dy<=1.0){
+      bobX=clickX; bobY=clickY;
+    } else {
+      // Closest point inside ellipse
+      const angle=Math.atan2(dy,dx);
+      bobX=cx+Math.cos(angle)*rx*0.85;
+      bobY=cy+Math.sin(angle)*ry*0.85;
+    }
+  } else {
+    bobX=W*.36+Math.random()*W*.26; bobY=H*.28+Math.random()*H*.2;
+  }
+  bobVis=true;
+
+  // Classify zone and update puzzle tracking
+  const xFrac=bobX/W, yFrac=bobY/H;
+  const zone=classifyZone(xFrac,yFrac,G.biome);
+  G.lastCastZone=zone;
+
+  // Runestone Salmon: track upstream→midstream→downstream sequence in mtnriver
+  if(G.biome==='mtnriver'){
+    const order=['upstream','midstream','downstream'];
+    const cur=G.riverCastOrder;
+    if(zone==='upstream'&&cur.length===0) G.riverCastOrder=['upstream'];
+    else if(zone==='midstream'&&cur.length===1&&cur[0]==='upstream') G.riverCastOrder=['upstream','midstream'];
+    else if(zone==='downstream'&&cur.length===2) G.riverCastOrder=['upstream','midstream','downstream'];
+    else if(zone!=='upstream'&&zone!=='midstream'&&zone!=='downstream') {/* neutral cast — keep sequence */}
+    else G.riverCastOrder=[]; // wrong order — reset
+    clog('🎣 River cast zone: '+zone+' | Sequence: ['+G.riverCastOrder.join('→')+']','sys');
+  }
+
+  // Show a subtle zone indicator on canvas
+  G._castZoneFlash={x:bobX,y:bobY,zone,t:1.0};
+
   const cb=document.getElementById('castbtn');
   cb.disabled=true; cb.textContent='🎣 Line in water...';
   document.getElementById('wmsg').classList.add('on');
-  const W=PC.width,H=PC.height;
-  bobX=W*.36+Math.random()*W*.26; bobY=H*.28+Math.random()*H*.2; bobVis=true;
   const rod=RODS.find(r=>r.id===G.rod);
   const bite=(G.upg.worm?.82:1);
   const wait=(2200+Math.random()*5500)*bite/(1+rod.sp*.07);
@@ -1199,7 +1321,17 @@ function triggerBite(){
   G.phase='reeling';
   document.getElementById('wmsg').classList.remove('on');
   curFish=pickFish();
-  if(!curFish){toast('Nothing bit... try again!');resetIdle();return;}
+  if(!curFish){
+    // No fish bit — record this as a miss for Shadow Ripple puzzle
+    if(G.lastCastZone&&['clake','pond','frozen'].includes(G.biome)){
+      if(!G.missZonesHit) G.missZonesHit=new Set();
+      G.missZonesHit.add(G.lastCastZone);
+      clog('🌊 Lake miss zones: ['+[...G.missZonesHit].join(', ')+'] (need 3 different, then centre)','sys');
+    }
+    toast('Nothing bit... try again!');
+    resetIdle();
+    return;
+  }
   reelProg=20; // always start at 20%
   ringR=88; ringDir=-1;
   const rarSpd={common:0,uncommon:.15,rare:.3,epic:.45,legendary:.58,boss:.72,secret:.28};
@@ -1687,6 +1819,9 @@ function landFish(){
   G.biomeStreak[G.biome]++;
   G.sameSpotCasts++;
   G.idleTime=0; // reset idle on catch
+  // Reset lake miss zones — a catch disturbs the water
+  if(!G.missZonesHit)G.missZonesHit=new Set();
+  if(['clake','pond','frozen'].includes(G.biome))G.missZonesHit=new Set();
   // Track last 3 catches for Mirror Carp condition
   G.lastCatchIds.unshift(curFish.id);
   if(G.lastCatchIds.length>3)G.lastCatchIds.pop();
@@ -1822,6 +1957,16 @@ function pickFish(){
       if(f.sc==='glowbait')          return G.hasGlowBait&&(period==='night'||period==='midnight');
       if(f.sc==='golden_koi_caught') return G.caughtGoldenKoi&&(period==='dusk'||period==='evening');
       if(f.sc==='same_spot_5')       return G.sameSpotCasts>=5&&period==='dawn';
+      if(f.sc==='three_miss_zones')  return (()=>{
+        if(!G.missZonesHit)return false;
+        // Need 3 different zones missed, and current cast must be lake_center
+        return G.missZonesHit.size>=3&&G.lastCastZone==='lake_center'&&period==='midnight';
+      })();
+      if(f.sc==='upstream_order')    return (()=>{
+        const seq=G.riverCastOrder||[];
+        // Sequence complete: upstream→midstream→downstream done, now casting again at dawn
+        return seq.length===3&&seq[0]==='upstream'&&seq[1]==='midstream'&&seq[2]==='downstream'&&period==='dawn';
+      })();
       return false;
     }
     // River guardian: needs 30 catches in mtnriver
@@ -1929,6 +2074,9 @@ function buyLic(id){
 function goTo(id){
   G.biome=id; G.streak=0; G.sameSpotCasts=0; G.idleTime=0;
   G.biomeStreak[id]=G.biomeStreak[id]||0;
+  // Reset biome-specific puzzle states
+  if(['clake','pond','frozen'].includes(id)) G.missZonesHit=new Set();
+  if(id==='mtnriver') G.riverCastOrder=[];
   if(G.catBiome===id)showCatShop();
   toast('⛵ Travelled to '+BIOMES.find(b=>b.id===id)?.name+'!');
   updateUI(); renderBiomes();
@@ -2338,6 +2486,7 @@ function showCmdHelp(){
     '💰  Economy': ['/sellall','/sell','/addgold','/givebait'],
     '🎣  Force':   ['/forcenext','/forcerare','/forcemod','/cancelforce','/spawn'],
     '🔍  Search':  ['/listfish','/searchfish'],
+    '🧩  Puzzles': ['/puzzles','/misszone','/riverseq','/resetpuzzle'],
     '⚙️  Utils':   ['/luckboost','/clear'],
   };
   for(const [cat,cmds] of Object.entries(cats)){
@@ -2528,6 +2677,54 @@ function timeSpeedCmd(arg){
 function cmdToast(m){toast('📟 '+m);}
 // (keep for backwards compat with any remaining calls)
 
+function puzzlesCmd(){
+  clog('═══ Active Puzzle Progress ═══','sys');
+  // Shadow Ripple Carp
+  const mz=G.missZonesHit?[...G.missZonesHit]:[];
+  const mzDone=mz.length>=3;
+  clog(`🌊 Shadow Ripple Carp: Miss zones hit [${mz.join(', ')||'none'}] ${mzDone?'✅ 3+ zones — cast at lake_center at midnight!':'⏳ Need '+Math.max(0,3-mz.length)+' more'}`,mzDone?'ok':'info');
+  // Runestone Salmon
+  const rs=G.riverCastOrder||[];
+  const rsSeq=rs.join('→')||'none';
+  const rsDone=rs.length===3;
+  clog(`🐡 Runestone Salmon: River sequence [${rsSeq}] ${rsDone?'✅ Complete — cast at dawn!':rs.length===0?'⏳ Cast upstream first':'⏳ Next: '+(rs.length===1?'midstream':'downstream')}`,rsDone?'ok':'info');
+  // Echo Pike
+  const ep=G.sameSpotCasts||0;
+  clog(`🐟 Echo Pike: Same-spot casts ${ep}/5 ${ep>=5?'✅ Now cast at dawn!':'⏳ '+Math.max(0,5-ep)+' more casts needed'}`,ep>=5?'ok':'info');
+  // Whispering Koi
+  const wk=G.idleTime||0;
+  clog(`🐠 Whispering Koi: Idle time ${wk}s/60s ${wk>=60?'✅ Cast once now at midnight!':'⏳ Stay idle '+Math.max(0,60-wk)+'s more'}`,wk>=60?'ok':'info');
+  // Mirror Carp
+  const mc=G.lastCatchIds.slice(0,3);
+  const mcDone=mc.length===3&&new Set(mc).size===3;
+  clog(`🐟 Mirror Carp: Last 3 catches [${mc.map(id=>FISH.find(f=>f.id===id)?.name||id).join(', ')||'none'}] ${mcDone?'✅ 3 different species!':'⏳ Need 3 different in a row'}`,mcDone?'ok':'info');
+  // King's Coin Carp
+  clog(`🐠 King's Coin Carp: Golden Koi caught? ${G.caughtGoldenKoi?'✅ Yes — fish at dusk in temple/lake':'⏳ Catch a Golden Koi first'}`,G.caughtGoldenKoi?'ok':'info');
+  clog('Tip: Use /misszone and /riverseq for detailed puzzle info.','sys');
+}
+
+function missZoneCmd(){
+  const mz=G.missZonesHit?[...G.missZonesHit]:[];
+  clog('═══ Shadow Ripple Carp Puzzle ═══','sys');
+  clog('Goal: Miss 3 different lake zones, then cast at lake_center at midnight.','info');
+  clog(`Miss zones so far: [${mz.join(', ')||'none'}] (${mz.length}/3 needed)`,'info');
+  clog(`Last cast zone: ${G.lastCastZone||'none'}`,'info');
+  if(mz.length>=3) clog('✅ 3+ zones missed! Go to Clear Lake / Pond, set time to midnight, cast in the centre.','ok');
+  else clog(`⏳ Need ${3-mz.length} more distinct zone miss(es). Click different parts of the lake without catching anything.`,'warn');
+}
+
+function riverSeqCmd(){
+  const rs=G.riverCastOrder||[];
+  clog('═══ Runestone Salmon Puzzle ═══','sys');
+  clog('Goal: Cast upstream → midstream → downstream in Mountain River, then cast again at dawn.','info');
+  clog(`Current sequence: [${rs.join(' → ')||'not started'}]`,'info');
+  if(rs.length===0)     clog('⏳ Next: Click the TOP of the water (upstream).','warn');
+  else if(rs.length===1)clog('⏳ Next: Click the MIDDLE of the water (midstream).','warn');
+  else if(rs.length===2)clog('⏳ Next: Click the BOTTOM of the water (downstream).','warn');
+  else                   clog('✅ Sequence complete! Set time to dawn and cast again in Mountain River.','ok');
+  clog('Tip: In rivers, the top half of the pond = upstream, bottom = downstream.','sys');
+}
+
 // ═══════════════════════════════════════════════
 // ECLIPSE EVENT
 // ═══════════════════════════════════════════════
@@ -2612,8 +2809,66 @@ window.addEventListener('load',()=>{
     if(e.key==='ArrowLeft') trackArrowLeft=false;
     if(e.key==='ArrowRight') trackArrowRight=false;
   });
+  // Click/tap on the game canvas to cast at that position
+  document.getElementById('gc').addEventListener('click',(e)=>{
+    if(consoleOpen)return;
+    if(G.phase!=='idle')return;
+    // Don't trigger if clicking UI elements (buttons, popups)
+    if(e.target.closest('.pop,.ptog,#fov,#topbar,button'))return;
+    const rect=PC.getBoundingClientRect();
+    const scaleX=PC.width/rect.width;
+    const scaleY=PC.height/rect.height;
+    const cx=(e.clientX-rect.left)*scaleX;
+    const cy=(e.clientY-rect.top)*scaleY;
+    // Only cast if click is roughly in the water area
+    const wx=PC.width*.5,wy=PC.height*.45,wrx=PC.width*.35,wry=PC.height*.3;
+    const dx=(cx-wx)/wrx,dy=(cy-wy)/wry;
+    if(dx*dx+dy*dy<=1.3){
+      castLine(cx,cy);
+    }
+  });
+  document.getElementById('gc').addEventListener('touchstart',(e)=>{
+    if(consoleOpen)return;
+    if(G.phase!=='idle')return;
+    if(e.target.closest('.pop,.ptog,#fov,button'))return;
+    const t=e.touches[0];
+    const rect=PC.getBoundingClientRect();
+    const scaleX=PC.width/rect.width;
+    const scaleY=PC.height/rect.height;
+    const cx=(t.clientX-rect.left)*scaleX;
+    const cy=(t.clientY-rect.top)*scaleY;
+    const wx=PC.width*.5,wy=PC.height*.45,wrx=PC.width*.35,wry=PC.height*.3;
+    const dx=(cx-wx)/wrx,dy=(cy-wy)/wry;
+    if(dx*dx+dy*dy<=1.3){
+      e.preventDefault();
+      castLine(cx,cy);
+    }
+  },{passive:false});
+
+  // Mousemove — track hover for cursor hint & water cursor change
+  document.getElementById('gc').addEventListener('mousemove',(e)=>{
+    if(G.phase!=='idle'){G._hoverX=undefined;return;}
+    const rect=PC.getBoundingClientRect();
+    const scaleX=PC.width/rect.width;
+    const scaleY=PC.height/rect.height;
+    const mx=(e.clientX-rect.left)*scaleX;
+    const my=(e.clientY-rect.top)*scaleY;
+    const wx=PC.width*.5,wy=PC.height*.45,wrx=PC.width*.35,wry=PC.height*.3;
+    const dx=(mx-wx)/wrx,dy=(my-wy)/wry;
+    const onWater=dx*dx+dy*dy<=1.0;
+    G._hoverX=onWater?mx:undefined;
+    G._hoverY=my;
+    // Change cursor to crosshair over water, default elsewhere
+    e.currentTarget.style.cursor=onWater?'crosshair':'default';
+  });
+  document.getElementById('gc').addEventListener('mouseleave',()=>{
+    G._hoverX=undefined;
+    document.getElementById('gc').style.cursor='default';
+  });
+
   // Boot message in console log (pre-populated for when user opens it)
   clog('Corner Pond Console ready. Press ` to toggle.','sys');
+  clog('Tip: Click/tap the water to cast at that spot!','sys');
 });
 </script>
 </body>
