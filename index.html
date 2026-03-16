@@ -1,0 +1,1692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corner Pond</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+:root{
+  --pb:#fdf6e8;--pbr:#d4b896;--wd:#8b6b42;--wdd:#5c4228;
+  --tx:#3a2c1a;--txm:#7a6148;--gd:#d4aa3a;--bg:#6b9b52;--ac:#e8734a;
+  --wt:#4a9b8e;--wtd:#2d7a6e;
+  --cc:#7a9b52;--uc:#4a9b8e;--rc:#7a5cc0;--ec:#c04a8a;--lc:#c88a20;--sc:#2a8ad4;--bc:#8a1a1a;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:flex;flex-direction:column;}
+
+/* TOP BAR */
+#topbar{background:var(--wdd);color:#fdf0d0;padding:5px 12px;display:flex;align-items:center;gap:10px;border-bottom:2px solid #3a2008;flex-shrink:0;flex-wrap:wrap;}
+.gtitle{font-family:'Lora',serif;font-size:17px;letter-spacing:1px;}
+#time-disp{font-size:12px;font-weight:700;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,.35);color:#fdf0d0;min-width:130px;text-align:center;}
+#wx-disp{font-size:12px;padding:2px 8px;border-radius:10px;background:rgba(0,0,0,.35);color:#fdf0d0;}
+#evt-ticker{flex:1;font-size:11px;color:#f5c060;font-style:italic;text-align:center;overflow:hidden;white-space:nowrap;min-width:0;}
+.tstat{font-size:11px;white-space:nowrap;}
+.tstat span{font-weight:700;color:var(--gd);}
+
+/* LAYOUT */
+#wrap{display:flex;flex:1;overflow:hidden;min-height:0;}
+
+/* SIDE PANELS */
+#lpanel,#rpanel{background:var(--pb);display:flex;flex-direction:column;overflow:hidden;transition:width .22s,min-width .22s,border .22s;flex-shrink:0;}
+#lpanel{width:0;min-width:0;border-right:0px solid var(--pbr);}
+#rpanel{width:0;min-width:0;border-left:0px solid var(--pbr);}
+#lpanel.open{width:215px;min-width:215px;border-right:2px solid var(--pbr);}
+#rpanel.open{width:190px;min-width:190px;border-left:2px solid var(--pbr);}
+#lpanel.open>*,#rpanel.open>*{display:flex !important;}
+#lpanel>*,#rpanel>*{display:none !important;}
+
+.ptitle{background:var(--wd);color:#fdf0d0;font-family:'Lora',serif;font-size:14px;padding:8px 11px;border-bottom:2px solid var(--wdd);flex-shrink:0;flex-direction:column !important;}
+.ptitle small{font-family:'Nunito',sans-serif;font-size:9px;opacity:.75;font-style:italic;}
+#statsbox{padding:8px 10px;border-bottom:1px solid var(--pbr);flex-shrink:0;flex-direction:column !important;}
+.srow{display:flex;justify-content:space-between;font-size:12px;margin-bottom:3px;}
+.slbl{color:var(--txm);}
+.sval{font-weight:700;}
+.coin{color:var(--gd);}
+#navbtns{display:flex !important;gap:3px;padding:5px 7px;border-bottom:1px solid var(--pbr);flex-shrink:0;flex-wrap:wrap;}
+.nb{flex:1;min-width:0;padding:4px 2px;font-size:10px;font-family:'Nunito',sans-serif;font-weight:700;border:1.5px solid var(--pbr);background:#fff;border-radius:4px;cursor:pointer;color:var(--tx);text-align:center;white-space:nowrap;}
+.nb:hover{background:#f0dfc0;}
+.nb.act{background:var(--wd);color:#fdf0d0;border-color:var(--wdd);}
+#scont{flex:1;overflow-y:auto;padding:7px;flex-direction:column !important;}
+.tab{display:none;flex-direction:column;}
+.tab.show{display:flex;}
+
+/* Biome buttons */
+.bbtn{display:flex;flex-direction:column;width:100%;text-align:left;padding:6px 8px;margin-bottom:4px;border:1.5px solid var(--pbr);border-radius:6px;background:#fff;cursor:pointer;font-family:'Nunito',sans-serif;font-size:11px;transition:background .12s;}
+.bbtn:hover{background:#f0dfc0;}
+.bbtn.cur{border-color:var(--wt);background:#e0f5f0;}
+.brow{display:flex;justify-content:space-between;align-items:center;gap:4px;margin-top:3px;}
+.bprice{font-size:9px;color:var(--gd);font-weight:700;}
+
+/* Rod card */
+.rcard{background:#fff;border:1.5px solid var(--pbr);border-radius:6px;padding:7px;margin-bottom:6px;}
+.rname{font-weight:700;font-size:12px;color:var(--wdd);}
+.smrow{display:flex;justify-content:space-between;font-size:9px;color:var(--txm);margin-top:4px;margin-bottom:1px;}
+.mbar{height:4px;background:#e0d4c0;border-radius:2px;}
+.mbf{height:100%;border-radius:2px;}
+
+/* Fish in bag */
+.fitem{display:flex;align-items:center;gap:5px;background:#fff;border:1.5px solid var(--pbr);border-radius:5px;padding:4px 6px;margin-bottom:3px;}
+.femoji{font-size:17px;}
+.finfo{flex:1;}
+.fname{font-size:10px;font-weight:700;}
+.fsub{font-size:9px;color:var(--txm);}
+.fprice{font-size:9px;color:var(--gd);font-weight:700;}
+.rdot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.rdc{background:var(--cc)}.rdu{background:var(--uc)}.rdr{background:var(--rc)}.rde{background:var(--ec)}.rdl{background:var(--lc)}.rds{background:var(--sc)}.rdb{background:var(--bc);}
+.sbtn{font-size:9px;padding:2px 5px;background:var(--gd);color:#fff;border:none;border-radius:3px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;}
+.sall{width:100%;padding:5px;background:var(--ac);color:#fff;border:none;border-radius:5px;cursor:pointer;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;margin-bottom:5px;}
+
+/* Shop */
+.shtit{font-size:9px;font-weight:800;color:var(--txm);letter-spacing:.5px;margin:6px 0 3px;padding-bottom:2px;border-bottom:1px solid var(--pbr);}
+.shitem{background:#fff;border:1.5px solid var(--pbr);border-radius:6px;padding:6px 7px;margin-bottom:4px;}
+.shin{font-weight:700;font-size:10px;}
+.shde{font-size:9px;color:var(--txm);margin:2px 0 3px;line-height:1.3;}
+.shbr{display:flex;justify-content:space-between;align-items:center;gap:3px;}
+.shp{color:var(--gd);font-weight:700;font-size:10px;}
+.bbuy{font-size:9px;padding:2px 6px;background:var(--bg);color:#fff;border:none;border-radius:3px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;}
+.bbuy:hover{opacity:.82;}
+.bbuy:disabled{opacity:.4;cursor:not-allowed;}
+.obadge{font-size:8px;padding:2px 4px;background:#c8e0b8;color:#3d6127;border-radius:3px;font-weight:700;}
+.ebtn{font-size:9px;padding:2px 5px;background:var(--wt);color:#fff;border:none;border-radius:3px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;margin-left:2px;}
+
+/* Pack items */
+.pitem{background:#fff;border:1.5px solid var(--pbr);border-radius:5px;padding:5px 7px;margin-bottom:3px;}
+.pname{font-size:10px;font-weight:700;}
+.pdesc{font-size:9px;color:var(--txm);margin:1px 0 3px;line-height:1.3;}
+.pubtn{font-size:9px;padding:2px 6px;background:var(--ac);color:#fff;border:none;border-radius:3px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;}
+
+/* COMPENDIUM (right panel) */
+#chdr{background:var(--wd);color:#fdf0d0;font-family:'Lora',serif;font-size:13px;padding:7px 9px;border-bottom:2px solid var(--wdd);flex-direction:column !important;flex-shrink:0;}
+#chdr small{font-family:'Nunito',sans-serif;font-size:9px;opacity:.7;font-style:italic;}
+#cfilt{display:flex !important;gap:2px;padding:4px 5px;border-bottom:1px solid var(--pbr);flex-shrink:0;flex-wrap:wrap;}
+.cfb{font-size:9px;padding:2px 4px;border:1px solid var(--pbr);border-radius:3px;background:#fff;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;}
+.cfb.act{background:var(--wd);color:#fdf0d0;border-color:var(--wdd);}
+#clist{flex:1;overflow-y:auto;padding:5px;flex-direction:column !important;}
+.ce{background:#fff;border:1.5px solid var(--pbr);border-radius:5px;padding:5px 7px;margin-bottom:3px;cursor:pointer;transition:background .1s;}
+.ce:hover{background:#fdf0d5;}
+.ce.lk{opacity:.5;cursor:default;}
+.ce:hover.lk{background:#fff;}
+.cetop{display:flex;align-items:center;gap:4px;margin-bottom:2px;}
+.ceem{font-size:15px;}
+.cenm{font-size:10px;font-weight:700;flex:1;}
+.cerb{font-size:8px;font-weight:700;padding:1px 3px;border-radius:2px;}
+.cedt{font-size:9px;color:var(--txm);line-height:1.3;}
+
+/* GAME CANVAS */
+#gc{flex:1;position:relative;overflow:hidden;min-width:0;}
+#pc{display:block;position:absolute;top:0;left:0;}
+#no{position:absolute;top:0;left:0;right:0;bottom:0;pointer-events:none;z-index:1;transition:background 4s;}
+#wc{display:block;position:absolute;top:0;left:0;pointer-events:none;z-index:2;}
+
+/* Toggle buttons */
+.ptog{position:absolute;top:50%;transform:translateY(-50%);z-index:12;background:var(--wd);color:#fdf0d0;border:2px solid var(--wdd);padding:8px 4px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:9px;writing-mode:vertical-rl;letter-spacing:.5px;opacity:.9;transition:opacity .15s,background .15s;line-height:1.3;}
+.ptog:hover{opacity:1;background:var(--wdd);}
+#tgl{left:0;border-left:none;border-radius:0 5px 5px 0;}
+#tgr{right:0;border-right:none;border-radius:5px 0 0 5px;}
+
+/* OVERLAYS */
+#wmsg{display:none;position:absolute;bottom:70px;left:50%;transform:translateX(-50%);background:rgba(18,12,4,.88);color:#fdf0d0;padding:7px 18px;border-radius:8px;font-family:'Lora',serif;font-size:13px;pointer-events:none;white-space:nowrap;z-index:10;}
+#wmsg.on{display:block;}
+
+#pbar{display:none;position:absolute;right:10px;top:50%;transform:translateY(-50%);width:22px;height:170px;background:rgba(18,12,4,.78);border:2px solid rgba(255,255,255,.12);border-radius:11px;overflow:visible;pointer-events:none;z-index:10;}
+#pbar.on{display:block;}
+#pinn{width:100%;height:100%;border-radius:9px;overflow:hidden;position:relative;}
+#pfill{position:absolute;bottom:0;left:0;right:0;background:linear-gradient(to top,#e8734a,#f5c060);border-radius:9px;transition:height .1s;}
+#plbl{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:9px;color:#fdf0d0;white-space:nowrap;font-weight:700;}
+#pfish{position:absolute;left:50%;transform:translateX(-50%);font-size:12px;transition:bottom .1s;bottom:3px;}
+
+/* REEL */
+#rw{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(10,6,2,.88);align-items:center;justify-content:center;flex-direction:column;gap:11px;pointer-events:all;z-index:15;}
+#rw.on{display:flex;}
+#rstat{font-family:'Lora',serif;color:#fdf0d0;font-size:16px;text-align:center;}
+#rhint{display:block;font-family:'Nunito',sans-serif;font-size:11px;color:#c8b88a;margin-top:2px;}
+#rbarrow{display:flex;align-items:center;gap:7px;}
+#fmsg{font-size:11px;color:#f5a07a;font-style:italic;height:14px;text-align:center;min-width:200px;}
+#rbwarn{font-size:11px;color:#ff6060;font-weight:700;height:14px;text-align:center;}
+
+/* POPUPS */
+.pop{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--pb);border:3px solid var(--wd);border-radius:13px;padding:18px 24px;text-align:center;z-index:25;pointer-events:all;box-shadow:0 8px 40px rgba(0,0,0,.65);max-width:290px;width:92%;}
+.pop.on{display:block;}
+.pclose{margin-top:9px;padding:5px 14px;background:var(--wd);color:#fdf0d0;border:none;border-radius:5px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:11px;}
+.rbadge{display:inline-block;font-size:10px;font-weight:700;padding:2px 8px;border-radius:7px;margin:4px 0;}
+.rb-c{background:#c8e0b8;color:#3a6020;}.rb-u{background:#b8dcd8;color:#1e5a50;}.rb-r{background:#d8c8f0;color:#5a3a9a;}
+.rb-e{background:#f0c0e0;color:#8a2060;}.rb-l{background:#f0e0a0;color:#8a5a10;}.rb-s{background:#c0d8f0;color:#1a5090;}.rb-b{background:#f0c0c0;color:#8a1a1a;}
+
+/* NPC */
+#npcpop{display:none;position:absolute;z-index:20;background:var(--pb);border:2px solid var(--wd);border-radius:9px;padding:11px 13px;max-width:195px;box-shadow:0 4px 20px rgba(0,0,0,.4);}
+#npcn{font-family:'Lora',serif;font-size:12px;font-weight:600;color:var(--wdd);margin-bottom:3px;}
+#npct{font-size:10px;color:var(--tx);line-height:1.5;font-style:italic;}
+.ncl{margin-top:6px;padding:3px 9px;background:var(--wd);color:#fdf0d0;border:none;border-radius:3px;cursor:pointer;font-size:10px;font-family:'Nunito',sans-serif;font-weight:700;}
+
+/* EVENT BANNER */
+#evtban{display:none;position:absolute;top:36px;left:50%;transform:translateX(-50%);background:rgba(140,20,20,.92);color:#fff;padding:7px 20px;border-radius:9px;font-family:'Lora',serif;font-size:13px;z-index:20;box-shadow:0 4px 20px rgba(0,0,0,.5);text-align:center;max-width:90%;}
+#evtban.on{display:block;}
+
+/* MODAL */
+#modal{display:none;position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.72);z-index:28;align-items:center;justify-content:center;}
+#modal.on{display:flex;}
+#mbox{background:var(--pb);border:3px solid var(--wd);border-radius:13px;padding:20px 26px;max-width:300px;width:92%;text-align:center;}
+#mtit{font-family:'Lora',serif;font-size:16px;font-weight:600;color:var(--wdd);margin-bottom:7px;}
+#mbod{font-size:11px;color:var(--txm);line-height:1.6;margin-bottom:12px;white-space:pre-wrap;}
+#mok{padding:7px 18px;background:var(--bg);color:#fff;border:none;border-radius:6px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;margin-right:5px;}
+#mnope{padding:7px 14px;background:var(--wd);color:#fdf0d0;border:none;border-radius:6px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;font-size:12px;}
+
+/* CAST BTN */
+#fov{position:absolute;bottom:0;left:0;right:0;display:flex;flex-direction:column;align-items:center;padding-bottom:13px;pointer-events:none;z-index:10;}
+#fov>*{pointer-events:all;}
+#castbtn{font-family:'Lora',serif;font-size:15px;font-weight:600;background:var(--wd);color:#fdf0d0;border:3px solid var(--wdd);border-radius:50px;padding:9px 28px;cursor:pointer;box-shadow:0 4px 0 var(--wdd);transition:transform .1s,box-shadow .1s;}
+#castbtn:hover{background:var(--wdd);}
+#castbtn:active{transform:translateY(2px);box-shadow:0 2px 0 var(--wdd);}
+#castbtn:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+
+/* TOAST */
+#toast{position:absolute;top:9px;left:50%;transform:translateX(-50%);background:rgba(18,12,4,.94);color:#fdf0d0;padding:6px 14px;border-radius:7px;font-size:12px;font-weight:600;pointer-events:none;opacity:0;transition:opacity .3s;z-index:30;white-space:nowrap;}
+#toast.on{opacity:1;}
+
+::-webkit-scrollbar{width:4px;}
+::-webkit-scrollbar-thumb{background:var(--pbr);border-radius:2px;}
+</style>
+</head>
+<body>
+<div id="topbar">
+  <div class="gtitle">🎣 Corner Pond</div>
+  <div id="time-disp">🌤️ Morning 06:00</div>
+  <div id="wx-disp">☀️ Clear</div>
+  <div id="evt-ticker"></div>
+  <div class="tstat">Gold: <span id="tgold">0</span>🪙</div>
+  <div class="tstat">Caught: <span id="tcaught">0</span></div>
+  <div class="tstat">Biome: <span id="tbiome">Corner Pond</span></div>
+  <div style="display:flex;align-items:center;gap:4px;margin-left:auto;">
+    <input id="cmdinput" type="text" placeholder="/help for commands" style="font-family:'Nunito',sans-serif;font-size:11px;padding:3px 8px;border-radius:6px;border:1.5px solid rgba(255,255,255,.2);background:rgba(0,0,0,.3);color:#fdf0d0;width:160px;outline:none;" onkeydown="if(event.key==='Enter')runCmd(this.value)"/>
+    <button onclick="runCmd(document.getElementById('cmdinput').value)" style="font-size:10px;padding:3px 8px;background:rgba(255,255,255,.15);color:#fdf0d0;border:1.5px solid rgba(255,255,255,.2);border-radius:5px;cursor:pointer;font-family:'Nunito',sans-serif;font-weight:700;">Go</button>
+  </div>
+</div>
+
+<div id="wrap">
+  <!-- LEFT PANEL -->
+  <div id="lpanel">
+    <div class="ptitle">🎒 Tackle Box<small>Inventory &amp; Shop</small></div>
+    <div id="statsbox">
+      <div class="srow"><span class="slbl">🪙 Gold</span><span class="sval coin" id="gdisp">0</span></div>
+      <div class="srow"><span class="slbl">🎒 Bag</span><span class="sval" id="bgcnt">0</span></div>
+      <div class="srow"><span class="slbl">💰 Sold</span><span class="sval" id="sdcnt">0</span></div>
+    </div>
+    <div id="navbtns">
+      <button class="nb act" onclick="showTab('biome')">Biome</button>
+      <button class="nb" onclick="showTab('rod')">Rod</button>
+      <button class="nb" onclick="showTab('bag')">Bag</button>
+      <button class="nb" onclick="showTab('shop')">Shop</button>
+      <button class="nb" onclick="showTab('pack')">Pack</button>
+    </div>
+    <div id="scont">
+      <div id="tab-biome" class="tab show">
+        <div style="font-size:10px;color:var(--txm);margin-bottom:5px;font-style:italic;">Choose your fishing location.</div>
+        <div id="biomelist"></div>
+      </div>
+      <div id="tab-rod" class="tab">
+        <div id="rodcard"></div>
+        <div style="font-size:10px;color:var(--txm);text-align:center;margin-top:3px;">Buy rods in Shop!</div>
+      </div>
+      <div id="tab-bag" class="tab">
+        <button class="sall" onclick="sellAll()">💰 Sell All Fish</button>
+        <div id="baglist"></div>
+      </div>
+      <div id="tab-shop" class="tab">
+        <div style="font-size:10px;color:var(--txm);margin-bottom:4px;font-style:italic;">🏪 Old Pete's Shop</div>
+        <div id="shoplist"></div>
+      </div>
+      <div id="tab-pack" class="tab">
+        <div style="font-size:10px;color:var(--txm);margin-bottom:4px;font-style:italic;">🐱 Purrcy's items</div>
+        <div id="packlist"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME CANVAS -->
+  <div id="gc">
+    <button id="tgl" class="ptog" onclick="togglePanel('l')">🎒&#10;Tackle</button>
+    <button id="tgr" class="ptog" onclick="togglePanel('r')">📖&#10;Comp</button>
+    <canvas id="pc"></canvas>
+    <div id="no"></div>
+    <canvas id="wc"></canvas>
+    <div id="wmsg">🎣 Waiting for a bite...</div>
+    <div id="pbar"><div id="plbl">Reel!</div><div id="pinn"><div id="pfill" style="height:0%"></div></div><div id="pfish">🐟</div></div>
+
+    <!-- REEL MINIGAME -->
+    <div id="rw">
+      <div id="rstat">Fish on the line!<small id="rhint">Press REEL when the ring is smallest!</small></div>
+      <div style="width:210px;height:210px;">
+        <svg id="rsvg" viewBox="0 0 210 210" xmlns="http://www.w3.org/2000/svg" width="210" height="210">
+          <circle cx="105" cy="105" r="88" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="18"/>
+          <circle id="rring" cx="105" cy="105" r="88" fill="none" stroke="#e8734a" stroke-width="5" stroke-dasharray="553"/>
+          <circle cx="105" cy="105" r="34" fill="rgba(100,220,160,0.1)" stroke="rgba(100,220,160,0.4)" stroke-width="1.5" stroke-dasharray="4,3"/>
+          <circle id="rbtn" cx="105" cy="105" r="26" fill="#e8734a" stroke="#b05020" stroke-width="2.5" style="cursor:pointer"/>
+          <text id="remi" x="105" y="100" text-anchor="middle" font-size="13">🐟</text>
+          <text x="105" y="114" text-anchor="middle" font-family="'Lora',serif" font-size="10" fill="#fff" font-weight="600">REEL!</text>
+        </svg>
+      </div>
+      <div id="rbarrow">
+        <span style="font-size:10px;color:#c8b88a;min-width:40px;text-align:right;">Fish</span>
+        <div style="width:170px;height:11px;background:rgba(255,255,255,.1);border-radius:5px;overflow:hidden;border:1px solid rgba(255,255,255,.12)">
+          <div id="rbar" style="height:100%;width:0%;background:linear-gradient(to right,#e8734a,#f5c060);border-radius:5px;transition:width .1s;"></div>
+        </div>
+        <span style="font-size:10px;color:#c8b88a;min-width:32px;">You 🎣</span>
+      </div>
+      <div id="fmsg"></div>
+      <div id="rbwarn"></div>
+    </div>
+
+    <!-- CATCH POPUP -->
+    <div class="pop" id="catchpop">
+      <div id="cpemi" style="font-size:46px;margin-bottom:5px;">🐟</div>
+      <div id="cpnam" style="font-family:'Lora',serif;font-size:18px;font-weight:600;color:var(--wdd);">Bass</div>
+      <div class="rbadge rb-c" id="cprar">Common</div>
+      <div id="cpdet" style="font-size:11px;color:var(--txm);margin-bottom:2px;"></div>
+      <div id="cpflav" style="font-size:10px;color:var(--txm);font-style:italic;margin-bottom:10px;"></div>
+      <div id="cprew" style="font-size:11px;color:#8a3a00;font-weight:700;margin-bottom:6px;display:none;"></div>
+      <button style="padding:6px 14px;border:none;border-radius:5px;cursor:pointer;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;background:var(--bg);color:#fff;margin:3px;" onclick="keepFish()">Keep 🎒</button>
+      <button style="padding:6px 14px;border:none;border-radius:5px;cursor:pointer;font-family:'Nunito',sans-serif;font-size:11px;font-weight:700;background:var(--gd);color:#fff;margin:3px;" onclick="sellCaught()">Sell 💰</button>
+    </div>
+
+    <!-- NOTE POPUP -->
+    <div class="pop" id="notepop">
+      <div style="font-size:28px;margin-bottom:5px;">📜</div>
+      <div style="font-family:'Lora',serif;font-size:14px;font-weight:600;color:var(--wdd);margin-bottom:5px;">Mysterious Note Found!</div>
+      <div id="notetxt" style="font-size:11px;color:var(--txm);font-style:italic;line-height:1.6;margin-bottom:10px;"></div>
+      <button class="pclose" onclick="closeNote()">Interesting...</button>
+    </div>
+
+    <!-- COMP DETAIL -->
+    <div class="pop" id="cdetpop">
+      <div id="cdemi" style="font-size:40px;margin-bottom:4px;">🐟</div>
+      <div id="cdnam" style="font-family:'Lora',serif;font-size:15px;font-weight:600;color:var(--wdd);"></div>
+      <div class="rbadge rb-c" id="cdrar"></div>
+      <div id="cdinfo" style="font-size:11px;color:var(--txm);margin:6px 0;line-height:1.6;text-align:left;"></div>
+      <button class="pclose" onclick="closeCDet()">Close</button>
+    </div>
+
+    <!-- NPC -->
+    <div id="npcpop">
+      <div id="npcn"></div>
+      <div id="npct"></div>
+      <button class="ncl" onclick="closeNPC()">Thanks</button>
+    </div>
+
+    <!-- CAT SHOP -->
+    <div class="pop" id="catpop" style="max-width:270px;">
+      <div style="font-size:30px;margin-bottom:3px;">🐱</div>
+      <div style="font-family:'Lora',serif;font-size:14px;font-weight:600;color:var(--wdd);margin-bottom:2px;">Purrcy's Wares</div>
+      <div style="font-size:10px;color:var(--txm);font-style:italic;margin-bottom:8px;">"Special items, special prices, meow."</div>
+      <div id="catitems"></div>
+      <button class="pclose" onclick="closeCat()">Leave</button>
+    </div>
+
+    <!-- EVENT BANNER -->
+    <div id="evtban"></div>
+
+    <!-- COMMAND HELP -->
+    <div class="pop" id="helppop" style="max-width:320px;max-height:80vh;overflow-y:auto;text-align:left;">
+      <div style="font-family:'Lora',serif;font-size:14px;font-weight:600;color:var(--wdd);margin-bottom:8px;text-align:center;">📟 Commands</div>
+      <div id="helplist" style="font-size:10px;line-height:1.8;color:var(--tx);"></div>
+      <button class="pclose" style="display:block;margin:8px auto 0;" onclick="document.getElementById('helppop').classList.remove('on')">Close</button>
+    </div>
+
+    <!-- CAST -->
+    <div id="fov"><button id="castbtn" onclick="castLine()">🎣 Cast Line</button></div>
+    <div id="toast"></div>
+
+    <!-- MODAL -->
+    <div id="modal">
+      <div id="mbox">
+        <div id="mtit"></div>
+        <div id="mbod"></div>
+        <button id="mok">Confirm</button>
+        <button id="mnope" onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT PANEL: COMPENDIUM -->
+  <div id="rpanel">
+    <div id="chdr">Fish Compendium<small id="cprog">0 / 0 discovered</small></div>
+    <div id="cfilt">
+      <button class="cfb act" onclick="setCF('all',this)">All</button>
+      <button class="cfb" onclick="setCF('common',this)">Com</button>
+      <button class="cfb" onclick="setCF('uncommon',this)">Unc</button>
+      <button class="cfb" onclick="setCF('rare',this)">Rare</button>
+      <button class="cfb" onclick="setCF('epic',this)">Epic</button>
+      <button class="cfb" onclick="setCF('legendary',this)">Leg</button>
+      <button class="cfb" id="sfiltbtn" onclick="setCF('secret',this)" style="display:none;">🔮</button>
+      <button class="cfb" onclick="setCF('boss',this)">👹</button>
+      <button class="cfb" onclick="setCF('mods',this)">✨Mods</button>
+    </div>
+    <div id="clist"></div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════
+// DATA
+// ═══════════════════════════════════════════════
+const BIOMES=[
+  {id:'pond',     name:'Corner Pond',    em:'🌿', desc:'Peaceful local pond.',            price:0,    lic:0,   boat:false, bgC:'#5a8a3c',wtC:'#4a9b8e',shC:'#c8a97a'},
+  {id:'river',    name:'River Bend',     em:'🏞️', desc:'Flowing river, diverse fish.',    price:150,  lic:50,  boat:false, bgC:'#4a7a3c',wtC:'#3a8acd',shC:'#b8a878'},
+  {id:'mtnriver', name:'Mountain River', em:'⛰️', desc:'Cold fast alpine waters.',        price:300,  lic:80,  boat:false, bgC:'#5a7050',wtC:'#5aabce',shC:'#a0907a'},
+  {id:'swamp',    name:'Murky Swamp',    em:'🌿', desc:'Dark murky waters.',              price:200,  lic:60,  boat:false, bgC:'#3a5030',wtC:'#4a7050',shC:'#8a7a60'},
+  {id:'clake',    name:'Clear Lake',     em:'💎', desc:'Crystal clear shimmering water.', price:400,  lic:100, boat:false, bgC:'#5a9050',wtC:'#60c0e0',shC:'#c0b090'},
+  {id:'coastal',  name:'Coastal Ocean',  em:'🌊', desc:'Sandy shallow shores.',           price:500,  lic:120, boat:true,  bgC:'#b0a070',wtC:'#2060c0',shC:'#d0c090'},
+  {id:'coldr',    name:'Cold River',     em:'❄️', desc:'Icy river, glowing fish.',        price:600,  lic:150, boat:true,  bgC:'#607870',wtC:'#60a0d0',shC:'#b0c0c0'},
+  {id:'temple',   name:'Temple Pond',    em:'⛩️', desc:'Sacred garden, rare fish.',       price:800,  lic:200, boat:false, bgC:'#608060',wtC:'#70b890',shC:'#c8b890'},
+  {id:'deepocean',name:'Deep Ocean',     em:'🌊', desc:'Dark open waters.',               price:1200, lic:300, boat:true,  bgC:'#102040',wtC:'#102050',shC:'#303050'},
+  {id:'frozen',   name:'Frozen Lake',    em:'🧊', desc:'Arctic wasteland.',               price:1500, lic:350, boat:true,  bgC:'#c0d8f0',wtC:'#a0d0f0',shC:'#e0f0ff'},
+  {id:'harbor',   name:'Ruined Harbor',  em:'⚓', desc:'Ancient sunken port.',            price:1800, lic:400, boat:true,  bgC:'#405060',wtC:'#507080',shC:'#708090'},
+  {id:'sacred',   name:'Sacred Lake',    em:'✨', desc:'Mythical ancient lake.',           price:3000, lic:600, boat:true,  bgC:'#503080',wtC:'#8060c0',shC:'#9080a0'},
+  {id:'trench',   name:'Deep Trench',    em:'🕳️', desc:'The abyss.',                      price:5000, lic:1000,boat:true,  bgC:'#0a0a18',wtC:'#0a0a20',shC:'#202030'},
+  {id:'falls',    name:'Waterfall Pools',em:'💧', desc:'Hidden pools beneath falls.',     price:700,  lic:180, boat:false, bgC:'#508060',wtC:'#50c0a0',shC:'#90b890'},
+  {id:'canal',    name:'Canal Ruins',    em:'🏚️', desc:'Abandoned canals.',               price:900,  lic:220, boat:false, bgC:'#504040',wtC:'#607060',shC:'#806060'},
+];
+
+const TD=['morning','noon','afternoon'];
+const TN=['midnight','night'];
+const TDW=['dawn'];
+
+const FISH=[
+  // COMMON
+  {id:'bluegill',   em:'🐠',name:'Bluegill',         rar:'common',    price:8,   mn:.4, mx:.6,  bio:['pond','clake'],            tm:TD,    desc:'A small energetic fish that bites almost anything.',    info:'Abundant near lily pads. Their small mouths mean lighter tackle works best.'},
+  {id:'sminnow',    em:'🐟',name:'Silver Minnow',     rar:'common',    price:5,   mn:.08,mx:.14, bio:['river','mtnriver'],        tm:TD,    desc:'Tiny and shiny, travel in massive schools.',            info:'Found in rivers in great numbers.'},
+  {id:'snapper',    em:'🐡',name:'Sand Snapper',      rar:'common',    price:12,  mn:.9, mx:1.5, bio:['coastal'],                 tm:TD,    desc:'Stubborn little ocean fish loves sandy shallows.',      info:'Hugs the sandy floor. Surprising fight for its size.'},
+  {id:'perch',      em:'🐠',name:'Perch',             rar:'common',    price:10,  mn:.2, mx:.6,  bio:['pond','river','clake'],    tm:[...TD,...TDW],desc:'Bold stripes and a decent fight.',               info:'Classic panfish, loves hiding among reeds.'},
+  {id:'bass',       em:'🐟',name:'Bass',              rar:'common',    price:15,  mn:.5, mx:1.8, bio:['pond','clake','river'],    tm:TD,    desc:'A pond staple with an aggressive bite.',               info:'Largemouth bass hit lures with explosive force.'},
+  // UNCOMMON
+  {id:'etrout',     em:'🐠',name:'Emerald Trout',     rar:'uncommon',  price:40,  mn:1.8,mx:2.8, bio:['mtnriver'],               tm:[...TDW,'morning'],desc:'Scales shimmer green in morning light.',      info:'Found only in cold alpine streams.'},
+  {id:'scatfish',   em:'🐡',name:'Striped Catfish',   rar:'uncommon',  price:35,  mn:3.6,mx:5.4, bio:['swamp','river'],          tm:TN,    desc:'Bottom feeder with surprising strength.',              info:'Nocturnal and powerful. Senses prey in darkness.'},
+  {id:'ccarp',      em:'🐟',name:'Crystal Carp',      rar:'uncommon',  price:30,  mn:2.4,mx:3.0, bio:['clake'],                  tm:TD,    desc:'Semi-transparent scales refract light like glass.',    info:'The cleaner the water, the more translucent they become.'},
+  {id:'carp',       em:'🐟',name:'Carp',              rar:'uncommon',  price:22,  mn:1.5,mx:5.0, bio:['pond','river','swamp'],   tm:[...TD,...TDW],desc:'Stubbornly strong bottom feeder.',              info:'Roots through mud and puts up an enduring battle.'},
+  {id:'eel',        em:'🟢',name:'River Eel',         rar:'uncommon',  price:30,  mn:.4, mx:1.2, bio:['river','swamp','canal'],  tm:TN,    desc:'Slippery and mysterious.',                             info:'Travels surprising distances. Nocturnal.'},
+  // RARE
+  {id:'tpike',      em:'🐟',name:'Thunder Pike',      rar:'rare',      price:80,  mn:6.8,mx:9.0, bio:['clake','pond'],           tm:['storm'],wx:'storm', desc:'Strikes the moment thunder rolls.',           info:'Uniquely drawn to electrical disturbances in storms.'},
+  {id:'gkoi',       em:'🐠',name:'Golden Koi',        rar:'rare',      price:100, mn:4.2,mx:5.0, bio:['temple','clake'],         tm:TD,    desc:'A symbol of fortune and good luck.',               info:'Moves slowly through sacred waters. Patience essential.'},
+  {id:'gsalmon',    em:'🐡',name:'Glowfin Salmon',    rar:'rare',      price:90,  mn:5.4,mx:8.2, bio:['coldr'],                  tm:TN,    desc:'Fins emit a faint blue glow in the dark.',           info:'Swims upriver at night guided by bioluminescence.'},
+  {id:'pike',       em:'🐟',name:'Northern Pike',     rar:'rare',      price:70,  mn:3.0,mx:6.0, bio:['river','clake','mtnriver'],tm:[...TD,...TDW],desc:'The apex predator of fresh water.',          info:'Long, toothy, and fast. Demands a skilled angler.'},
+  {id:'salmon',     em:'🐠',name:'Salmon',            rar:'rare',      price:75,  mn:2.5,mx:5.0, bio:['mtnriver','coldr'],       tm:[...TDW,...TD],desc:'Runs upstream with fury.',                  info:'Powerful leaping fish. Mid-run battles test every angler.'},
+  // EPIC
+  {id:'abangler',   em:'🐡',name:'Abyssal Angler',    rar:'epic',      price:250, mn:18, mx:27,  bio:['deepocean'],              tm:TN,    desc:'Terrifying deep-sea predator with glowing lure.',     info:'Hunts with bioluminescent lure. Rarely rises from the deep.'},
+  {id:'fsturg',     em:'🐟',name:'Frostscale Sturgeon',rar:'epic',     price:300, mn:34, mx:40,  bio:['frozen'],                 tm:TDW,   desc:'Armored scales coated in permanent frost.',           info:'Ancient and slow-moving. Its hide is tough enough to blunt hooks.'},
+  {id:'sturg',      em:'🐡',name:'Sturgeon',          rar:'epic',      price:180, mn:8,  mx:15,  bio:['river','deepocean'],      tm:[...TD,...TDW],desc:'Prehistoric giant.',                          info:'Can live for decades. Heavy and determined.'},
+  // LEGENDARY
+  {id:'lvkoi',      em:'🐠',name:'Leviathan Koi',     rar:'legendary', price:800, mn:120,mx:160, bio:['sacred'],                 tm:TDW,   desc:'Ancient legends claim it has lived for centuries.',   info:'Said to surface only at break of dawn.',rodReq:'tides'},
+  {id:'sfmarlin',   em:'🐟',name:'Sunfire Marlin',    rar:'legendary', price:1200,mn:200,mx:260, bio:['deepocean','coastal'],    tm:['noon'],desc:'Orange fins look like flames in the waves.',       info:'Only appears when the sun is directly overhead.'},
+  {id:'seel',       em:'🟢',name:'Shadow Eel',        rar:'legendary', price:900, mn:50, mx:60,  bio:['trench','canal'],         tm:['midnight'],desc:'Rarely seen. Some say it disappears into shadows.',info:'Exists only at the witching hour in the deepest waters.'},
+  {id:'gcarp',      em:'🐠',name:'Golden Carp',       rar:'legendary', price:500, mn:3,  mx:7,   bio:['pond','temple'],          tm:[...TDW,...TD],desc:'They say it grants a wish...',                info:'The legendary Golden Carp spotted in the deepest pools.'},
+  // SECRET — hidden until note found
+  {id:'mguppy',     em:'🌙',name:'Moonveil Guppy',    rar:'secret',    price:2000,mn:.12,mx:.18, bio:['pond','clake','temple','sacred'],tm:['midnight'],sc:'fullmoon',  desc:'Glows faintly under moonlight.',         info:'Only during a full moon at midnight. Most anglers never know it exists.',  note:{bio:['pond','clake','temple','sacred'],clue:"The water shimmers strangely on moonlit nights... something tiny dances at the surface when the moon is full and the clock strikes twelve."}},
+  {id:'ptuna',      em:'🐟',name:'Phantom Tuna',      rar:'secret',    price:3000,mn:50, mx:60,  bio:['deepocean','coastal'],    tm:[...TD,...TN,...TDW],sc:'fifty',   desc:'Appears as a ripple before suddenly striking.',   info:'After catching 50 fish in a row without leaving.',                         note:{bio:['deepocean','coastal'],clue:"They say persistence in one place calls something ancient... the 50th shadow is not alone."}},
+  {id:'cwcarp',     em:'⚙️',name:'Clockwork Carp',    rar:'secret',    price:2500,mn:3.4,mx:4.0, bio:['canal'],                  tm:['midnight'],sc:'threethirty', desc:'Metallic scales tick like a watch.',      info:'Catch a fish exactly at 3:33 AM game time.',                              note:{bio:['canal'],clue:"The old canal echoes with a ticking sound at an unusual hour. Something mechanical stirs in the murk."}},
+  {id:'rserpent',   em:'🌈',name:'Rainbow Serpent Fry',rar:'secret',   price:1800,mn:.8, mx:1.0, bio:['falls'],                  tm:[...TD,...TDW],sc:'rainrainbow', desc:'Juvenile of a mythical creature.',       info:'During rain while a rainbow is visible.',                                  note:{bio:['falls'],clue:"When rain falls at the waterfall pools and the sky breaks open with colour, something mythic stirs beneath."}},
+  // BOSS
+  {id:'tkraken',    em:'🦑',name:'Tempest Kraken',    rar:'boss',      price:0,   mn:1100,mx:1200,bio:['deepocean'],             tm:[...TN,...TDW],bossEvt:'storm_boss',rodReq:'tides',   desc:'Sea titan emerges during violent storms.',       info:'Event: Massive storm. Requires Rod of Tides. Reward: Kraken Ink.',   reward:{n:'Kraken Ink',t:'mat'},    breakRod:true},
+  {id:'gtitan',     em:'🧊',name:'Glacier Titan',     rar:'boss',      price:0,   mn:750,mx:900,  bio:['frozen'],                tm:[...TDW,...TN],bossEvt:'ice_boss',  rodReq:'frostbite',desc:'Colossus beneath the frozen surface.',          info:'Event: Ice cracks. Requires Frostbite Rod. Reward: Frost Scales.',   reward:{n:'Frost Scales',t:'mat'}, breakRod:false},
+  {id:'sking',      em:'👑',name:'Sunken King',       rar:'boss',      price:0,   mn:380,mx:480,  bio:['harbor'],                tm:[...TN,...TDW],bossEvt:'bell_boss', rodReq:'tides',   desc:'Ancient monarch of the deep.',                  info:'Event: Bell rings underwater. Requires Rod of Tides. Reward: Ancient Coins.',reward:{n:'Ancient Coins',t:'gold',amt:500},breakRod:false},
+  {id:'labyss',     em:'🕳️',name:'Leviathan of Abyss',rar:'boss',      price:0,   mn:2200,mx:2500,bio:['trench'],               tm:[...TN,'midnight'],bossEvt:'void_boss',rodReq:'celestial',desc:'Multi-stage behemoth of the abyss.',          info:'Event: Water turns black. Requires Celestial Rod. Reward: Rod Blueprint.',reward:{n:'Rod Blueprint',t:'spec'},breakRod:true},
+  // NEW BOSS
+  {id:'tleviathan', em:'🌊',name:'Tempest Leviathan', rar:'boss',      price:0,   mn:1450,mx:1725,bio:['deepocean'],             tm:['storm'],wx:'storm',bossEvt:'storm_boss',rodReq:'tides',desc:'Colossal sea beast surfacing when lightning strikes repeatedly.',info:'Event: Storm + lightning. Requires Rod of Tides. Its thrashing can snap reinforced lines.',reward:{n:'Leviathan Scale',t:'mat'},breakRod:true},
+  {id:'arguardian', em:'🐟',name:'Ancient River Guardian',rar:'boss',  price:0,   mn:545, mx:727, bio:['mtnriver'],              tm:TDW,       bossEvt:'guardian_boss',rodReq:'tides',sc:'river30', desc:'Enormous ancient fish protecting sacred waters.',info:'Appears after 30 fish caught in the Mountain River. Requires Rod of Tides. Reward: Guardian Scale.',reward:{n:'Guardian Scale',t:'mat'},breakRod:false},
+  // NEW COMMON
+  {id:'rshiner',    em:'🐟',name:'River Shiner',       rar:'common',   price:4,   mn:.14,mx:.23,  bio:['river','mtnriver'],       tm:TD,       desc:'A small reflective fish in shimmering schools.',     info:'Schools of shiners flash like silver coins in the current.'},
+  {id:'ftbream',    em:'🐠',name:'Flathead Bream',     rar:'common',   price:6,   mn:.45,mx:.9,   bio:['pond','clake','frozen'],   tm:TD,       desc:'A simple dependable freshwater catch.',              info:'Found across most calm freshwater areas. Consistent and reliable.'},
+  {id:'swsardine',  em:'🐟',name:'Saltwater Sardine',  rar:'common',   price:5,   mn:.09,mx:.11,  bio:['coastal'],                tm:TD,       desc:'Tiny schooling ocean fish. Very common bait-taker.', info:'Schools in the thousands just beneath the surface.'},
+  // NEW UNCOMMON
+  {id:'cfperch',    em:'🐠',name:'Copperfin Perch',    rar:'uncommon', price:25,  mn:1.4,mx:1.8,  bio:['clake','river'],          tm:TD,       desc:'A sturdy fish with metallic orange fins.',           info:'Its coppery fins catch the light making it easy to spot.'},
+  {id:'mbsucker',   em:'🐡',name:'Mossback Sucker',    rar:'uncommon', price:28,  mn:2.3,mx:3.2,  bio:['swamp','river'],          tm:['morning'],desc:'Its back collects algae, perfect swamp camouflage.',info:'Blends into muddy roots. Often missed by casual anglers.'},
+  {id:'dreel',      em:'🟢',name:'Driftwood Eel',      rar:'uncommon', price:32,  mn:2.7,mx:3.6,  bio:['river'],                  tm:TN,       desc:'Long and thin, hides among submerged branches.',    info:'Coils around debris. Hard to hook once it wraps around a log.'},
+  // NEW RARE
+  {id:'ssbass',     em:'🐠',name:'Sunscale Bass',      rar:'rare',     price:85,  mn:6.4,mx:8.2,  bio:['pond','clake','frozen'],  tm:['dusk','evening'],desc:'Scales glow orange in evening light.', info:'Visible beneath calm water at sunset. A beautiful and elusive catch.'},
+  {id:'grtout',     em:'🐟',name:'Ghost River Trout',  rar:'rare',     price:78,  mn:4.5,mx:5.9,  bio:['mtnriver'],               tm:['morning'],wx:'fog',desc:'A pale trout that blends with misty river currents.',info:'Only emerges during foggy mornings. Its pale scales are near-invisible in mist.'},
+  {id:'bljelly',    em:'🫧',name:'Blue Lantern Jellyfish',rar:'rare',   price:95,  mn:2.3,mx:3.2,  bio:['coastal'],                tm:TN,       desc:'A jellyfish glowing with calm blue light beneath waves.',info:'Drifts with the tide at night. Its glow illuminates the water around it.'},
+  // NEW EPIC
+  {id:'tbgrpuper',  em:'🐡',name:'Tidebreaker Grouper', rar:'epic',    price:280, mn:50, mx:63,   bio:['coastal'],                tm:['dusk','evening'],desc:'Massive reef predator of incredible strength.',info:'Hugs the reef at sunset. Few anglers have the strength to land one.'},
+  {id:'ifpike',     em:'🐟',name:'Icefang Pike',        rar:'epic',    price:310, mn:32, mx:41,   bio:['frozen','coldr'],         tm:TN,       desc:'Vicious predator with razor teeth, scales cold as ice.',info:'Hunts aggressively at night. Its teeth can cut through weaker lines.'},
+  {id:'thcarp',     em:'🐟',name:'Thunderhead Carp',    rar:'epic',    price:260, mn:38, mx:45,   bio:['clake','pond','frozen'],  tm:['storm'],wx:'storm',desc:'Highly active when thunder rolls across the water.',info:'Becomes agitated in storms. Strikes with unusual aggression for a carp.'},
+  // NEW LEGENDARY
+  {id:'aurkoi',     em:'🐠',name:'Aurora Koi',          rar:'legendary',price:1100,mn:82, mx:100,  bio:['clake','sacred'],         tm:TN,       desc:'Scales shimmer like the northern lights.',           info:'Only surfaces on clear nights with an aurora visible. A breathtaking sight.'},
+  {id:'stmtuna',    em:'🐟',name:'Stormbreaker Tuna',   rar:'legendary',price:1300,mn:190,mx:218,  bio:['deepocean','coastal'],   tm:['storm'],wx:'storm',desc:'Charges straight through violent waves, challenging the storm.',info:'Thrives in rough water. Only the most powerful rods can hold it.'},
+  {id:'ecleel',     em:'🟢',name:'Eclipse Eel',         rar:'legendary',price:950, mn:63, mx:82,   bio:['trench','sacred'],       tm:['noon'],  sc:'eclipse',desc:'Shadowy eel appearing only when daylight briefly vanishes.',info:'An eclipse event must be active. Said to emerge from the darkest depths.'},
+  {id:'fmsal',      em:'🐡',name:'Frost Monarch Salmon',rar:'legendary',price:1050,mn:100,mx:118,  bio:['coldr'],                 tm:TDW,      wx:'snow',  desc:'Massive salmon with icy blue scales like frozen glass.',info:'Only during snowfall at dawn. Its scales are so cold they steam in warm air.'},
+  {id:'glcarp',     em:'🐠',name:'Golden Levi Carp',    rar:'legendary',price:880, mn:118,mx:141,  bio:['temple','clake'],        tm:['dusk','evening'],desc:'Ancestor of all koi. Scales shine like polished gold.',info:'Said to be thousands of years old. Glides silently at sunset.'},
+  {id:'acangler',   em:'🐡',name:'Abyss Crown Angler',  rar:'legendary',price:1400,mn:136,mx:163,  bio:['deepocean','trench'],    tm:['midnight'],desc:'Gigantic anglerfish whose lure resembles a crown of light.',info:'Its glowing crown-lure draws prey from great distances in pitch darkness.'},
+  // NEW SECRET
+  {id:'pguppy',     em:'✨',name:'Prism Guppy',         rar:'secret',   price:2200,mn:.09,mx:.09,  bio:['clake'],                 tm:['noon'], sc:'noon_rainbow', desc:'Tiny body refracts sunlight into dazzling rainbow colours.',info:'Active only at noon during a rainbow. Most anglers mistake it for a reflection.', note:{bio:['clake'],clue:"At the clearest lake, when noon light meets rain, the water itself seems to dance in colour. Something tiny hides within the shimmer."}},
+  {id:'gvcatfish',  em:'🐡',name:'Gravestone Catfish',  rar:'secret',   price:2800,mn:16, mx:20,   bio:['swamp','river'],         tm:['midnight'],sc:'still_midnight',desc:'Pale catfish lurking beneath forgotten river crossings.',info:'Appears only when the river is perfectly still at midnight.',            note:{bio:['swamp','river'],clue:"Old rivermen say that when the swamp holds its breath and the moon is high, something pale drifts beneath the ancient crossing stones."}},
+  {id:'mmackerel',  em:'🐟',name:'Mirage Mackerel',     rar:'secret',   price:2400,mn:4.1,mx:5.4,  bio:['coastal'],               tm:['noon'], sc:'noon_heat',  desc:'Seen darting across the water like a mirage.',         info:'Only during extreme heat at noon. Many anglers believe they imagined it.',       note:{bio:['coastal'],clue:"When the ocean shimmers with heat and even the air seems to melt, something flickers across the surface. Blink and it is gone."}},
+];
+
+const RODS=[
+  {id:'twig',     name:'Twig Rod',        desc:'A bent twig and string.',             price:0,    pw:1, sp:1, lk:1, dur:3,  spec:null},
+  {id:'wooden',   name:'Wooden Angler',   desc:'Cheap starter. Low durability.',      price:80,   pw:3, sp:2, lk:2, dur:5,  spec:null},
+  {id:'bamboo',   name:'Bamboo River',    desc:'Flexible. Uncommon fish boost.',      price:200,  pw:4, sp:5, lk:3, dur:7,  spec:'uncommon_boost'},
+  {id:'storm',    name:'Stormcatcher',    desc:'Strong line. Storm fish boost.',      price:500,  pw:6, sp:4, lk:4, dur:8,  spec:'storm_boost'},
+  {id:'crystal',  name:'Crystal Glass',   desc:'Rare shadows glow shiny!',            price:900,  pw:5, sp:6, lk:6, dur:6,  spec:'crystal_shadow'},
+  {id:'abyss',    name:'Abyss Hunter',    desc:'Deep ocean specialist.',              price:1500, pw:8, sp:5, lk:5, dur:10, spec:'deep_boost'},
+  {id:'frostbite',name:'Frostbite Rod',   desc:'Arctic fish struggle less.',          price:1800, pw:7, sp:7, lk:5, dur:10, spec:'frost_boost'},
+  {id:'tides',    name:'Rod of Tides',    desc:'Required for boss fish.',             price:3000, pw:9, sp:8, lk:7, dur:15, spec:'boss_capable'},
+  {id:'celestial',name:'Celestial Rod',   desc:'Secret fish bonus. Glows in events.',price:6000, pw:10,sp:9, lk:10,dur:15, spec:'secret_boost'},
+];
+
+const UPGRADES=[
+  {id:'worm',    name:'Worm Bait',     desc:'Bite time -25%.',                price:40,   type:'upgrade'},
+  {id:'lure',    name:'Lure Kit',      desc:'Rare fish more likely.',         price:150,  type:'upgrade'},
+  {id:'mbait',   name:'Magic Bait',    desc:'Legendary fish chance doubled!', price:800,  type:'upgrade'},
+  {id:'boat',    name:'Rowboat',       desc:'Unlocks boat-required biomes!',  price:600,  type:'upgrade'},
+  {id:'glic',    name:'Global Licence',desc:'Skip individual licences.',      price:2000, type:'upgrade'},
+  {id:'hat',     name:'Lucky Hat',     desc:'Cosmetic. Luck +1.',             price:60,   type:'cosmetic'},
+  {id:'vest',    name:'Fishing Vest',  desc:'Cosmetic. Very professional.',   price:120,  type:'cosmetic'},
+];
+
+const CATITEMS=[
+  {id:'ti_dawn', em:'🌅',name:'Dawn Elixir',    desc:'Sets time to Dawn.',           fx:'time',   val:'dawn',   price:80},
+  {id:'ti_night',em:'🌙',name:'Night Brew',      desc:'Sets time to Night.',          fx:'time',   val:'night',  price:80},
+  {id:'ti_noon', em:'☀️',name:'Noon Tonic',      desc:'Sets time to Noon.',           fx:'time',   val:'noon',   price:80},
+  {id:'wstorm',  em:'⛈️',name:'Storm Flask',     desc:'Summons storm for 3 min.',     fx:'weather',val:'storm',  price:150},
+  {id:'wclear',  em:'☀️',name:'Clear Sky Vial',  desc:'Clears weather for 3 min.',    fx:'weather',val:'clear',  price:100},
+  {id:'wrain',   em:'🌧️',name:'Rain Bottle',     desc:'Starts rain for 3 min.',       fx:'weather',val:'rain',   price:100},
+  {id:'rbait',   em:'🌈',name:'Prismatic Bait',  desc:'Next catch guaranteed Rare+!', fx:'force_rare',val:true,  price:300},
+  {id:'luck',    em:'🍀',name:'Lucky Clover',    desc:'Doubles luck for 5 min.',      fx:'luck',   val:300,      price:200},
+  {id:'moon',    em:'🌕',name:'Moon Mirror',     desc:'Triggers full moon briefly.',  fx:'fullmoon',val:true,   price:500},
+];
+
+const WEVENTS=[
+  {id:'frenzy',  name:'🐟 Fish Frenzy!',         desc:'Catch rate doubled!',              dur:180,col:'#208040'},
+  {id:'bmoon',   name:'🩸 Blood Moon',            desc:'Mutated fish appear!',             dur:240,col:'#900020'},
+  {id:'meteor',  name:'☄️ Meteor Impact!',        desc:'Alien fish spawn temporarily!',   dur:120,col:'#a04000'},
+];
+
+const BOSS_EVTS=[
+  {id:'storm_boss',   bossId:'tkraken',    msg:'⚡ A massive storm! The ocean churns violently. Something stirs in the deep...',  npc:'"Throw your strongest line when lightning kisses the water. Only the bravest catch what lurks below."'},
+  {id:'ice_boss',     bossId:'gtitan',     msg:'🧊 The ice cracks. A colossal shadow moves beneath the surface...',               npc:'"I have seen it. Big as a barn. Waits under the crack. Your coldest rod might hold."'},
+  {id:'bell_boss',    bossId:'sking',      msg:'⚓ An ancient bell rings from underwater. The harbor trembles...',                 npc:'"The King stirs when the bell tolls. His movements are unpredictable — wait for the pause."'},
+  {id:'void_boss',    bossId:'labyss',     msg:'🕳️ All fish vanish. The water turns pitch black. Something vast is coming...',    npc:'"It has no name. Only the Celestial Rod can hold its weight. Time the reel perfectly."'},
+  {id:'guardian_boss',bossId:'arguardian', msg:'🌿 The Mountain River trembles. Ancient ripples spread from the deepest pool...', npc:'"It has been here since before any map was drawn. Fish these waters long enough and you will feel it watching you."'},
+];
+
+const NPC_HINTS=[
+  {bio:['deepocean'],  txt:'"I once saw a ripple here after my 50th catch that day... never saw it again."'},
+  {bio:['canal'],      txt:'"The ticking... only at a very specific time. You\'ll know when you hear it."'},
+  {bio:['falls'],      txt:'"When the sky weeps and makes colours, look beneath the falls."'},
+  {bio:['pond','clake','temple'],txt:'"Full moon nights feel magical here. Something glows in the shallows."'},
+  {bio:['mtnriver'],   txt:'"Fish these cold waters long enough and something ancient will notice you."'},
+  {bio:['swamp','river'],txt:'"Old rivermen speak of something pale at the crossing stones when the water goes still."'},
+];
+
+// ─── MODIFIERS ───────────────────────────────────
+// Each modifier: id, name, em, desc (what it does), rarity (chance weight),
+// wMult (weight multiplier), pMult (price multiplier), col (badge colour)
+const MODIFIERS=[
+  {id:'giant',     name:'Giant',       em:'🔶', desc:'A massive specimen far exceeding normal size.',              rarity:6,  wMult:2.8,  pMult:2.2,  col:'#c04400',txt:'#fff'},
+  {id:'golden',    name:'Golden',      em:'✨',  desc:'Shimmering gold scales. Extremely valuable.',               rarity:4,  wMult:1.2,  pMult:4.5,  col:'#d4aa3a',txt:'#3a2800'},
+  {id:'radioactive',name:'Radioactive',em:'☢️',  desc:'Glowing green fish. Probably fine to sell.',               rarity:3,  wMult:1.5,  pMult:3.0,  col:'#50c020',txt:'#fff'},
+  {id:'albino',    name:'Albino',      em:'🤍',  desc:'Pure white colouration. A rare genetic marvel.',           rarity:5,  wMult:0.9,  pMult:2.8,  col:'#e8e0d0',txt:'#4a3820'},
+  {id:'aurora',    name:'Aurora',      em:'🌌',  desc:'Scales shift through every colour of the northern lights.',rarity:2,  wMult:1.3,  pMult:5.0,  col:'#6030c0',txt:'#fff'},
+  {id:'ancient',   name:'Ancient',     em:'🪨',  desc:'A living fossil. Its age is beyond reckoning.',            rarity:2,  wMult:3.5,  pMult:3.5,  col:'#706050',txt:'#fff'},
+];
+// Rod modifier chance bonus: index maps to rod bonus weight (added to roll)
+const ROD_MOD_BONUS={twig:0,wooden:0,bamboo:0.5,storm:0.5,crystal:1,abyss:1.5,frostbite:1,tides:2,celestial:4};
+
+// ─── COMMANDS ────────────────────────────────────
+const COMMANDS={
+  '/help':     {desc:'Show all available commands.',           fn:()=>showCmdHelp()},
+  '/gold':     {desc:'Show your current gold.',                fn:()=>cmdToast('🪙 Gold: '+G.gold)},
+  '/time':     {desc:'Show current game time.',                fn:()=>cmdToast('⏰ '+document.getElementById('time-disp').textContent)},
+  '/weather':  {desc:'Show current weather.',                  fn:()=>cmdToast('🌦️ '+document.getElementById('wx-disp').textContent)},
+  '/biome':    {desc:'Show current biome.',                    fn:()=>cmdToast('📍 '+BIOMES.find(b=>b.id===G.biome)?.name)},
+  '/rod':      {desc:'Show equipped rod.',                     fn:()=>cmdToast('🎣 '+RODS.find(r=>r.id===G.rod)?.name)},
+  '/caught':   {desc:'Show total fish caught.',                fn:()=>cmdToast('🐟 Caught: '+G.caught)},
+  '/streak':   {desc:'Show current catch streak.',             fn:()=>cmdToast('🔥 Streak: '+G.streak)},
+  '/bag':      {desc:'Show bag contents count.',               fn:()=>cmdToast('🎒 Bag: '+G.bag.length+' fish')},
+  '/sellall':  {desc:'Sell all fish in your bag.',             fn:()=>sellAll()},
+  '/mods':     {desc:'Show discovered modifiers.',             fn:()=>showModsCmd()},
+  '/materials':{desc:'Show collected boss materials.',         fn:()=>showMatsCmd()},
+  '/dawn':     {desc:'Set time to dawn.',                      fn:()=>{G.gt=240;updateTimeDom();cmdToast('🌅 Time set to Dawn');}},
+  '/noon':     {desc:'Set time to noon.',                      fn:()=>{G.gt=720;updateTimeDom();cmdToast('☀️ Time set to Noon');}},
+  '/night':    {desc:'Set time to night.',                     fn:()=>{G.gt=1320;updateTimeDom();cmdToast('🌙 Time set to Night');}},
+  '/midnight': {desc:'Set time to midnight.',                  fn:()=>{G.gt=0;updateTimeDom();cmdToast('🌑 Time set to Midnight');}},
+  '/clear':    {desc:'Clear weather.',                         fn:()=>{setWx('clear');cmdToast('☀️ Weather cleared');}},
+  '/storm':    {desc:'Summon a storm.',                        fn:()=>{setWx('storm',180);cmdToast('⛈️ Storm summoned!');}},
+  '/rain':     {desc:'Start rain.',                            fn:()=>{setWx('rain',180);cmdToast('🌧️ Rain started!');}},
+  '/fog':      {desc:'Start fog.',                             fn:()=>{setWx('fog',120);cmdToast('🌫️ Fog rolled in.');}},
+  '/snow':     {desc:'Start snow.',                            fn:()=>{setWx('snow',120);cmdToast('❄️ Snow falling!');}},
+  '/fullmoon': {desc:'Toggle full moon.',                      fn:()=>{G.fullMoon=!G.fullMoon;cmdToast('🌕 Full moon '+(G.fullMoon?'ON':'OFF'));}},
+  '/eclipse':  {desc:'Trigger solar eclipse event.',           fn:()=>triggerEclipse()},
+  '/frenzy':   {desc:'Trigger Fish Frenzy event.',             fn:()=>triggerWEvent('frenzy')},
+  '/bloodmoon':{desc:'Trigger Blood Moon event.',              fn:()=>triggerWEvent('bmoon')},
+};
+
+// ═══════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════
+const G={
+  gold:0, rod:'twig',
+  rods:{twig:true},
+  upg:{worm:false,lure:false,mbait:false,boat:false,glic:false,hat:false,vest:false},
+  biomes:{pond:{unlocked:true,lic:true}},
+  biome:'pond',
+  bag:[], pack:[],
+  disc:{},        // fishId -> {best,count,mods:{modId:count}}
+  notes:{},       // fishId -> true (note found)
+  discoveredMods:{}, // modId -> true (seen this modifier)
+  trophies:[],
+  caught:0, sold:0, streak:0,
+  biomeStreak:{},  // biomeId -> catch count without leaving
+  phase:'idle',
+  gt:360,          // game time in minutes
+  tspd:2,
+  wx:'clear',
+  wxTimer:0,
+  event:null, evtTimer:0,
+  eclipse:false, eclipseTimer:0,
+  bossActive:null, bossShown:{},
+  catBiome:null, catCool:0,
+  fullMoon:false,
+  luckTimer:0,
+  forceRare:false,
+  mats:{},
+  cfilt:'all',
+  seed:Math.floor(Math.random()*99999),
+};
+
+let curFish=null, reelProg=0, ringR=88, ringDir=-1, ringSpd=.7;
+let ringRAF=null, fightIv=null, waitTO=null;
+let bossStage=0;
+
+// Canvas
+let PC, CTX, WC, WTX;
+let bobX=0, bobY=0, bobVis=false;
+let shadows=[];
+
+// ═══════════════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════════════
+function adjCol(hex,amt){
+  let h=hex.replace('#','');
+  if(h.length===3)h=h[0]+h[0]+h[1]+h[1]+h[2]+h[2];
+  if(h.length!==6)return hex;
+  let rv=parseInt(h.slice(0,2),16)||0;
+  let gv=parseInt(h.slice(2,4),16)||0;
+  let bv=parseInt(h.slice(4,6),16)||0;
+  if(amt>0){rv=Math.round(rv+(255-rv)*amt);gv=Math.round(gv+(255-gv)*amt);bv=Math.round(bv+(255-bv)*amt);}
+  else{rv=Math.round(rv*(1+amt));gv=Math.round(gv*(1+amt));bv=Math.round(bv*(1+amt));}
+  rv=Math.max(0,Math.min(255,rv));gv=Math.max(0,Math.min(255,gv));bv=Math.max(0,Math.min(255,bv));
+  return '#'+[rv,gv,bv].map(x=>x.toString(16).padStart(2,'0')).join('');
+}
+const lighten=(h,a)=>adjCol(h,a);
+const darken=(h,a)=>adjCol(h,-a);
+
+function toast(m){
+  const t=document.getElementById('toast');
+  t.textContent=m; t.classList.add('on');
+  clearTimeout(t._t);
+  t._t=setTimeout(()=>t.classList.remove('on'),2500);
+}
+
+let _mcb=null;
+function showModal(title,body,cb){
+  document.getElementById('mtit').textContent=title;
+  document.getElementById('mbod').textContent=body;
+  _mcb=cb;
+  document.getElementById('mok').onclick=()=>{closeModal();_mcb&&_mcb();};
+  document.getElementById('modal').classList.add('on');
+}
+function closeModal(){document.getElementById('modal').classList.remove('on');}
+
+function rbClass(r){return{common:'rb-c',uncommon:'rb-u',rare:'rb-r',epic:'rb-e',legendary:'rb-l',secret:'rb-s',boss:'rb-b'}[r]||'rb-c';}
+function rbLabel(r){return{common:'Common',uncommon:'Uncommon',rare:'Rare',epic:'Epic',legendary:'✨ Legendary',secret:'🔮 Secret',boss:'👹 BOSS'}[r]||r;}
+
+// ═══════════════════════════════════════════════
+// CANVAS
+// ═══════════════════════════════════════════════
+function initCanvas(){
+  PC=document.getElementById('pc');
+  WC=document.getElementById('wc');
+  CTX=PC.getContext('2d');
+  WTX=WC.getContext('2d');
+  resizeC();
+  window.addEventListener('resize',resizeC);
+  shadows=[];
+  for(let i=0;i<8;i++) shadows.push({x:.2+Math.random()*.6,y:.33+Math.random()*.3,vx:(Math.random()-.5)*.0009,vy:(Math.random()-.5)*.0004,sz:7+Math.random()*11,rare:false});
+  requestAnimationFrame(drawLoop);
+}
+
+function resizeC(){
+  const el=document.getElementById('gc');
+  const W=el.offsetWidth||600, H=el.offsetHeight||400;
+  PC.width=W; PC.height=H;
+  WC.width=W; WC.height=H;
+  if(!bobVis){bobX=W*.5;bobY=H*.42;}
+}
+
+let _lt=0;
+function drawLoop(ts){
+  const dt=Math.min((ts-_lt)/1000,.08);_lt=ts;
+  drawPond(dt);
+  drawWeather();
+  requestAnimationFrame(drawLoop);
+}
+
+function drawPond(dt){
+  const W=PC.width,H=PC.height;
+  if(!W||!H)return;
+  const bm=BIOMES.find(x=>x.id===G.biome)||BIOMES[0];
+  CTX.clearRect(0,0,W,H);
+
+  // BG
+  CTX.fillStyle=bm.bgC; CTX.fillRect(0,0,W,H);
+  // grass patches
+  CTX.fillStyle=darken(bm.bgC,.12);
+  [[.08,.13],[.5,.08],[.92,.12],[.15,.88],[.85,.85]].forEach(([px,py])=>{
+    CTX.beginPath();CTX.ellipse(px*W,py*H,W*.055,H*.035,0,0,Math.PI*2);CTX.fill();
+  });
+  // trees
+  [[.07,.21],[.93,.18],[.05,.79],[.95,.82],[.19,.9]].forEach(([tx,ty])=>{
+    CTX.fillStyle='#6b4423';CTX.fillRect(tx*W-4,ty*H,8,H*.04);
+    CTX.fillStyle=darken(bm.bgC,.08);
+    CTX.beginPath();CTX.ellipse(tx*W,ty*H,W*.028,H*.052,0,0,Math.PI*2);CTX.fill();
+  });
+  // shore
+  CTX.fillStyle=bm.shC;
+  CTX.beginPath();CTX.ellipse(W*.5,H*.45,W*.37,H*.31,0,0,Math.PI*2);CTX.fill();
+  // water
+  CTX.fillStyle=bm.wtC;
+  CTX.beginPath();CTX.ellipse(W*.5,H*.45,W*.32,H*.27,0,0,Math.PI*2);CTX.fill();
+  // shimmer
+  CTX.fillStyle=lighten(bm.wtC,.14);CTX.globalAlpha=.22;
+  CTX.beginPath();CTX.ellipse(W*.44,H*.38,W*.11,H*.065,-.3,0,Math.PI*2);CTX.fill();
+  CTX.globalAlpha=1;
+  // water lines
+  CTX.strokeStyle=lighten(bm.wtC,.2);CTX.lineWidth=1;CTX.globalAlpha=.38;
+  for(let i=0;i<4;i++){const y=H*(.35+i*.05);CTX.beginPath();CTX.moveTo(W*.2,y);CTX.lineTo(W*.38,y-.015*H);CTX.stroke();CTX.beginPath();CTX.moveTo(W*.62,y);CTX.lineTo(W*.8,y+.01*H);CTX.stroke();}
+  CTX.globalAlpha=1;
+  // frozen overlay
+  if(G.biome==='frozen'){CTX.fillStyle='rgba(200,230,255,.28)';CTX.beginPath();CTX.ellipse(W*.5,H*.45,W*.32,H*.27,0,0,Math.PI*2);CTX.fill();}
+  // dark overlay for deep
+  if(G.biome==='trench'){CTX.fillStyle='rgba(0,0,10,.35)';CTX.fillRect(0,0,W,H);}
+  // lily pads (non-ocean)
+  if(!['deepocean','trench','coastal'].includes(G.biome)){
+    [[.31,.41],[.67,.5],[.37,.55]].forEach(([lx,ly])=>{
+      CTX.fillStyle='#3d7a28';CTX.beginPath();CTX.ellipse(lx*W,ly*H,W*.023,H*.014,-.3,0,Math.PI*2);CTX.fill();
+      CTX.fillStyle='#f5d070';CTX.beginPath();CTX.arc(lx*W,ly*H-2,3,0,Math.PI*2);CTX.fill();
+    });
+  }
+  // rocks
+  [[.27,.62],[.76,.58],[.5,.22]].forEach(([rx,ry])=>{CTX.fillStyle='#9a8a70';CTX.beginPath();CTX.ellipse(rx*W,ry*H,W*.019,H*.011,-.2,0,Math.PI*2);CTX.fill();});
+  // dock
+  drawDock(W,H);
+  // fish shadows
+  updateShadows(dt,W,H);
+  // fisherman
+  drawFisherman(W,H);
+  // night
+  const na=nightAlpha();
+  document.getElementById('no').style.background=`rgba(10,15,50,${na.toFixed(2)})`;
+  if(na>.3) drawStars(W,H,na);
+  // bobber + line
+  if(bobVis){
+    const bob=Math.sin(Date.now()/800)*2.5;
+    CTX.strokeStyle='rgba(200,192,168,.65)';CTX.lineWidth=1;CTX.setLineDash([3,2]);
+    CTX.beginPath();CTX.moveTo(W*.48+W*.04,H*.62);CTX.lineTo(bobX,bobY+bob);CTX.stroke();
+    CTX.setLineDash([]);
+    // bobber float bob
+    const bby=bobY+bob;
+    CTX.beginPath();CTX.arc(bobX,bby,5.5,0,Math.PI*2);CTX.fillStyle='#e85040';CTX.fill();
+    CTX.beginPath();CTX.arc(bobX,bby-2.5,2.5,0,Math.PI*2);CTX.fillStyle='#fff';CTX.fill();
+    // ripple
+    const rp=(Date.now()/1400)%1;
+    CTX.beginPath();CTX.arc(bobX,bobY,8+rp*13,0,Math.PI*2);
+    CTX.strokeStyle=`rgba(100,200,180,${.45*(1-rp)})`;CTX.lineWidth=1;CTX.stroke();
+  }
+}
+
+function drawDock(W,H){
+  const dx=W*.44,dy=H*.63,dw=W*.13,dh=H*.024;
+  CTX.fillStyle='#8b6b42';CTX.beginPath();CTX.roundRect(dx,dy,dw,dh,3);CTX.fill();
+  CTX.fillStyle='#a07848';CTX.fillRect(dx-.01*W,dy-.005*H,dw+.02*W,dh*.35);
+  CTX.fillStyle='#6b4423';
+  CTX.fillRect(dx+dw*.1,dy+dh,dw*.08,H*.06);
+  CTX.fillRect(dx+dw*.8,dy+dh,dw*.08,H*.06);
+  CTX.strokeStyle='#6b4423';CTX.lineWidth=1;
+  for(let i=1;i<5;i++){CTX.beginPath();CTX.moveTo(dx+dw*i*.2,dy);CTX.lineTo(dx+dw*i*.2,dy+dh);CTX.stroke();}
+}
+
+function drawFisherman(W,H){
+  const fx=W*.47,fy=H*.62;
+  CTX.fillStyle='#c8783a';CTX.beginPath();CTX.ellipse(fx,fy+11,8,9,0,0,Math.PI*2);CTX.fill();
+  CTX.fillStyle='#f0c890';CTX.beginPath();CTX.arc(fx,fy+2,6.5,0,Math.PI*2);CTX.fill();
+  CTX.fillStyle='#5c4228';CTX.fillRect(fx-7,fy-5,14,3.5);
+  CTX.fillStyle='#6b4a30';CTX.fillRect(fx-5.5,fy-13,11,9);
+  CTX.strokeStyle='#c8783a';CTX.lineWidth=3;CTX.lineCap='round';
+  CTX.beginPath();CTX.moveTo(fx+7,fy+8);CTX.lineTo(fx+18,fy+2);CTX.stroke();
+  CTX.strokeStyle='#5c4228';CTX.lineWidth=2.5;
+  CTX.beginPath();CTX.moveTo(fx+18,fy+2);CTX.lineTo(fx+31,fy-17);CTX.stroke();
+}
+
+function updateShadows(dt,W,H){
+  shadows.forEach(s=>{
+    s.x+=s.vx+(Math.random()-.5)*.0018;s.y+=s.vy+(Math.random()-.5)*.0009;
+    if(s.x<.19)s.vx=Math.abs(s.vx);if(s.x>.81)s.vx=-Math.abs(s.vx);
+    if(s.y<.22)s.vy=Math.abs(s.vy);if(s.y>.68)s.vy=-Math.abs(s.vy);
+    const sx=s.x*W,sy=s.y*H;
+    const edx=(sx-W*.5)/(W*.32),edy=(sy-H*.45)/(H*.27);
+    if(edx*edx+edy*edy<.92){
+      const bm=BIOMES.find(x=>x.id===G.biome)||BIOMES[0];
+      if(s.rare&&G.rod==='crystal'){
+        const g=CTX.createRadialGradient(sx,sy,0,sx,sy,s.sz*1.6);
+        g.addColorStop(0,'rgba(200,160,255,.65)');g.addColorStop(1,'rgba(200,160,255,0)');
+        CTX.fillStyle=g;CTX.beginPath();CTX.ellipse(sx,sy,s.sz*1.6,s.sz*.55,0,0,Math.PI*2);CTX.fill();
+      } else {
+        CTX.fillStyle=darken(bm.wtC,.18);CTX.globalAlpha=.22;
+        CTX.beginPath();CTX.ellipse(sx,sy,s.sz,s.sz*.38,0,0,Math.PI*2);CTX.fill();CTX.globalAlpha=1;
+      }
+    }
+  });
+  if(G.rod==='crystal'&&Math.random()<.0008) shadows[Math.floor(Math.random()*shadows.length)].rare=true;
+}
+
+function drawStars(W,H,alpha){
+  const seed=G.seed,now=Date.now()/1000;
+  for(let i=0;i<60;i++){
+    const px=((seed*17+i*1327)%1000)/1000;
+    const py=((seed*31+i*743)%1000)/1000;
+    const tw=.5+.5*Math.sin(now+i*2.3);
+    CTX.globalAlpha=alpha*(0.4+0.6*tw);
+    CTX.fillStyle='#ffffff';
+    const sz=((seed+i*37)%3===0)?1.8:1;
+    CTX.beginPath();CTX.arc(px*W,py*(H*.3),sz,0,Math.PI*2);CTX.fill();
+  }
+  CTX.globalAlpha=1;
+}
+
+function nightAlpha(){
+  const h=Math.floor(G.gt/60);
+  if(h>=6&&h<=18)return 0;
+  if(h>=21||h<=3)return .68;
+  if(h>18&&h<21)return(h-18)/3*.68;
+  if(h>3&&h<6)return .68-(h-3)/3*.68;
+  return 0;
+}
+
+function drawWeather(){
+  const W=WC.width,H=WC.height;
+  if(!W||!H)return;
+  WTX.clearRect(0,0,W,H);
+  if(G.wx==='rain'||G.wx==='storm'){
+    WTX.strokeStyle=G.wx==='storm'?'rgba(150,190,255,.55)':'rgba(150,190,255,.4)';
+    WTX.lineWidth=1;
+    const cnt=G.wx==='storm'?130:65,t=Date.now()/1000;
+    for(let i=0;i<cnt;i++){
+      const x=((i*179+t*320)%W+W)%W,y=((i*101+t*430)%H+H)%H;
+      WTX.beginPath();WTX.moveTo(x,y);WTX.lineTo(x-2,y+12);WTX.stroke();
+    }
+    if(G.wx==='storm'&&Math.random()<.003){WTX.fillStyle='rgba(255,255,220,.1)';WTX.fillRect(0,0,W,H);}
+  } else if(G.wx==='snow'){
+    WTX.fillStyle='rgba(220,235,255,.65)';const t=Date.now()/3000;
+    for(let i=0;i<50;i++){const x=((i*137+t*22)%W+W)%W,y=((i*71+t*32)%H+H)%H;WTX.beginPath();WTX.arc(x,y,2,0,Math.PI*2);WTX.fill();}
+  } else if(G.wx==='fog'){WTX.fillStyle='rgba(200,210,220,.22)';WTX.fillRect(0,0,W,H);}
+}
+
+// ═══════════════════════════════════════════════
+// TIME & WEATHER
+// ═══════════════════════════════════════════════
+function getTimePeriod(){
+  const h=Math.floor(G.gt/60);
+  if(h>=0&&h<=2)return 'midnight';
+  if(h>=3&&h<=5)return 'dawn';
+  if(h>=6&&h<=10)return 'morning';
+  if(h>=11&&h<=13)return 'noon';
+  if(h>=14&&h<=16)return 'afternoon';
+  if(h>=17&&h<=19)return 'evening';
+  if(h>=20&&h<=21)return 'dusk';
+  return 'night';
+}
+
+function updateTimeDom(){
+  const h=Math.floor(G.gt/60),m=Math.floor(G.gt%60);
+  const p=getTimePeriod();
+  const ic={midnight:'🌑',dawn:'🌅',morning:'🌤️',noon:'☀️',afternoon:'🌤️',evening:'🌆',dusk:'🌇',night:'🌙'};
+  document.getElementById('time-disp').textContent=`${ic[p]||'🌤️'} ${p.charAt(0).toUpperCase()+p.slice(1)} ${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}`;
+  document.getElementById('tbiome').textContent=BIOMES.find(b=>b.id===G.biome)?.name||G.biome;
+}
+
+function setWx(w,timer=0){
+  G.wx=w; G.wxTimer=timer;
+  const ic={clear:'☀️',rain:'🌧️',storm:'⛈️',fog:'🌫️',snow:'❄️'};
+  document.getElementById('wx-disp').textContent=`${ic[w]||'☀️'} ${w.charAt(0).toUpperCase()+w.slice(1)}`;
+}
+
+// ═══════════════════════════════════════════════
+// GAME TICK — runs every real second
+// ═══════════════════════════════════════════════
+function startTick(){
+  setInterval(()=>{
+    // Advance time
+    G.gt=(G.gt+G.tspd)%1440;
+    updateTimeDom();
+
+    // Weather
+    if(G.wxTimer>0){G.wxTimer--;if(G.wxTimer<=0)setWx('clear');}
+    else if(Math.random()<.0008){
+      const opts=['clear','clear','clear','rain','storm','fog','snow'];
+      setWx(opts[Math.floor(Math.random()*opts.length)],180+Math.floor(Math.random()*360));
+    }
+
+    // World event
+    if(G.evtTimer>0){G.evtTimer--;if(G.evtTimer<=0){G.event=null;document.getElementById('evt-ticker').textContent='';}}
+    else if(!G.event&&Math.random()<.0004){
+      const ev=WEVENTS[Math.floor(Math.random()*WEVENTS.length)];
+      G.event=ev.id; G.evtTimer=ev.dur;
+      showBanner(ev.name+' — '+ev.desc, ev.col);
+      document.getElementById('evt-ticker').textContent='⚡ '+ev.name+' active!';
+      toast(ev.name);
+    }
+
+    // Boss events
+    if(!G.bossActive&&Math.random()<.0004){
+      const bev=BOSS_EVTS[Math.floor(Math.random()*BOSS_EVTS.length)];
+      const boss=FISH.find(f=>f.id===bev.bossId);
+      if(boss&&G.biomes[boss.bio[0]]?.unlocked&&!G.bossShown[bev.id]){
+        G.bossActive=bev.id; G.bossShown[bev.id]=true;
+        showBanner(bev.msg,'rgba(120,10,10,.9)');
+        document.getElementById('evt-ticker').textContent='👹 BOSS: '+(boss.name||'Unknown')+'!';
+        setTimeout(()=>showNPC('👤 Mysterious Figure',bev.npc),2500);
+      }
+    }
+
+    // Cat shop
+    if(G.catCool>0){G.catCool--;}
+    else if(!G.catBiome&&Math.random()<.0004){
+      const ul=Object.keys(G.biomes).filter(id=>G.biomes[id]?.unlocked);
+      if(ul.length){G.catBiome=ul[Math.floor(Math.random()*ul.length)];
+        if(G.catBiome===G.biome)showCatShop();
+        else toast('🐱 Purrcy appeared at '+BIOMES.find(b=>b.id===G.catBiome)?.name+'!');}
+    }
+
+    // Luck timer
+    if(G.luckTimer>0)G.luckTimer--;
+
+    // Eclipse countdown
+    if(G.eclipseTimer>0){G.eclipseTimer--;if(G.eclipseTimer<=0)G.eclipse=false;}
+
+    // Guardian boss check
+    checkGuardianBoss();
+
+    // Full moon cycle (~12 real min)
+    G.fullMoon=(Math.floor(Date.now()/1000/720)%2===0);
+
+    // Random NPC hint
+    if(Math.random()<.00025&&G.phase==='idle'){
+      const hints=NPC_HINTS.filter(h=>h.bio.includes(G.biome));
+      if(hints.length)showNPC('🧙 Mysterious Stranger',hints[Math.floor(Math.random()*hints.length)].txt);
+    }
+  },1000);
+}
+
+function showBanner(msg,col){
+  const b=document.getElementById('evtban');
+  b.textContent=msg; b.style.background=col||'rgba(140,20,20,.92)';
+  b.classList.add('on');
+  setTimeout(()=>b.classList.remove('on'),6000);
+}
+
+// ═══════════════════════════════════════════════
+// FISHING
+// ═══════════════════════════════════════════════
+function castLine(){
+  if(G.phase!=='idle')return;
+  const bi=G.biomes[G.biome];
+  if(!bi?.lic&&!G.upg.glic){toast('⚠️ You need a fishing licence here!');return;}
+  G.phase='waiting';
+  const cb=document.getElementById('castbtn');
+  cb.disabled=true; cb.textContent='🎣 Line in water...';
+  document.getElementById('wmsg').classList.add('on');
+  const W=PC.width,H=PC.height;
+  bobX=W*.36+Math.random()*W*.26; bobY=H*.28+Math.random()*H*.2; bobVis=true;
+  const rod=RODS.find(r=>r.id===G.rod);
+  const bite=(G.upg.worm?.82:1);
+  const wait=(2200+Math.random()*5500)*bite/(1+rod.sp*.07);
+  waitTO=setTimeout(()=>{if(G.phase==='waiting')triggerBite();},wait);
+}
+
+function triggerBite(){
+  G.phase='reeling';
+  document.getElementById('wmsg').classList.remove('on');
+  curFish=pickFish();
+  if(!curFish){toast('Nothing bit... try again!');resetIdle();return;}
+  reelProg=0; ringR=88; ringDir=-1;
+  const rarSpd={common:0,uncommon:.17,rare:.33,epic:.47,legendary:.6,boss:.75,secret:.3};
+  const rod=RODS.find(r=>r.id===G.rod);
+  ringSpd=Math.max(.28,.5+(rarSpd[curFish.rar]||0)-rod.sp*.024);
+  bossStage=0;
+  document.getElementById('remi').textContent=curFish.em;
+  document.getElementById('rstat').innerHTML=`A <strong>${curFish.rar==='boss'?'⚠️ BOSS — ':''}</strong><strong>${curFish.name}</strong> is on the line!<small id="rhint">Press REEL when the ring is smallest!</small>`;
+  document.getElementById('rw').classList.add('on');
+  document.getElementById('pbar').classList.add('on');
+  document.getElementById('rbar').style.width='0%';
+  document.getElementById('pfill').style.height='0%';
+  document.getElementById('pfish').style.bottom='3px';
+  document.getElementById('pfish').textContent=curFish.em;
+  document.getElementById('rbtn').onclick=pressReel;
+  startRing(); startFight();
+}
+
+function startRing(){
+  if(ringRAF)cancelAnimationFrame(ringRAF);
+  function step(){
+    if(G.phase!=='reeling')return;
+    ringR+=ringDir*ringSpd;
+    if(ringR<=32){ringR=32;ringDir=1;}
+    if(ringR>=88){ringR=88;ringDir=-1;}
+    const ring=document.getElementById('rring');
+    const circ=2*Math.PI*ringR;
+    ring.setAttribute('r',ringR);
+    ring.setAttribute('stroke-dasharray',circ.toFixed(1));
+    const tt=(ringR-32)/56;
+    ring.setAttribute('stroke',`rgb(${Math.round(80+tt*108)},${Math.round(220-tt*86)},${Math.round(120-tt*70)})`);
+    ring.setAttribute('stroke-width',(5+(1-tt)*3).toFixed(1));
+    ringRAF=requestAnimationFrame(step);
+  }
+  ringRAF=requestAnimationFrame(step);
+}
+
+function pressReel(){
+  if(G.phase!=='reeling')return;
+  const tt=(ringR-32)/56;
+  const score=Math.max(.05,1-tt);
+  const rod=RODS.find(r=>r.id===G.rod);
+  const lm=G.luckTimer>0?1.5:1;
+  reelProg=Math.min(100,reelProg+score*(0.8+rod.pw*.05)*17*lm);
+  syncBars();
+  const btn=document.getElementById('rbtn');
+  btn.setAttribute('fill',score>.75?'#42c060':score>.45?'#e8c040':'#c04040');
+  setTimeout(()=>btn.setAttribute('fill','#e8734a'),200);
+  setFightMsg(score>.75?'🎯 Perfect!':score>.45?'Good!':'Too soon...');
+  if(curFish?.breakRod&&score<.28&&Math.random()<.25){
+    document.getElementById('rbwarn').textContent='⚠️ Your rod is straining!';
+    setTimeout(()=>document.getElementById('rbwarn').textContent='',2000);
+  }
+  if(reelProg>=100){
+    const bossStages=curFish.rar==='boss'?3:1;
+    if(bossStage<bossStages-1){
+      bossStage++;reelProg=0;syncBars();
+      document.getElementById('rhint').textContent=`Stage ${bossStage+1}/${bossStages} — Fight harder!`;
+      ringSpd*=1.28;setFightMsg('⚔️ Stage '+( bossStage+1)+'!');
+    } else {landFish();}
+  }
+}
+
+function syncBars(){
+  document.getElementById('rbar').style.width=reelProg+'%';
+  document.getElementById('pfill').style.height=reelProg+'%';
+  document.getElementById('pfish').style.bottom=Math.round((reelProg/100)*158+3)+'px';
+}
+
+function startFight(){
+  if(fightIv)clearInterval(fightIv);
+  const str={common:.07,uncommon:.17,rare:.31,epic:.44,legendary:.57,boss:.7,secret:.14}[curFish.rar]||.2;
+  fightIv=setInterval(()=>{
+    if(G.phase!=='reeling'){clearInterval(fightIv);return;}
+    if(Math.random()<.42){
+      let pull=str*(8+Math.random()*12);
+      if(curFish.rar==='boss'&&Math.random()<.06){reelProg=0;pull=0;setFightMsg('💥 Line snapped! Reset!');}
+      else{reelProg=Math.max(0,reelProg-pull);syncBars();}
+      const msgs={boss:['⚡ Massive pull!','💥 It surges!','⚡ FIGHT BACK!'],legendary:['💪 Huge pull!','🌊 Powerful!'],rare:['💪 Fish pulls!'],common:['~splash~']};
+      const m=(msgs[curFish.rar]||msgs.common);
+      setFightMsg(m[Math.floor(Math.random()*m.length)]);
+    }
+  },curFish.rar==='boss'?750:1150);
+}
+
+function setFightMsg(m){
+  document.getElementById('fmsg').textContent=m;
+  clearTimeout(setFightMsg._t);
+  setFightMsg._t=setTimeout(()=>document.getElementById('fmsg').textContent='',950);
+}
+
+function rollModifier(){
+  const rod=RODS.find(r=>r.id===G.rod);
+  const bonus=ROD_MOD_BONUS[G.rod]||0;
+  const lm=G.luckTimer>0?1.5:1;
+  // Base chance: ~12% at twig, scales with rod bonus and luck
+  const totalChance=0.12+(bonus*0.04)+(rod.lk*0.01)*lm;
+  if(Math.random()>totalChance) return null;
+  // Weighted pick
+  const pool=MODIFIERS.map(m=>({m,w:m.rarity+(bonus*.5)}));
+  const tot=pool.reduce((s,x)=>s+x.w,0);
+  let rv=Math.random()*tot;
+  for(const x of pool){rv-=x.w;if(rv<=0)return x.m;}
+  return pool[0].m;
+}
+
+function landFish(){
+  G.phase='caught';
+  if(ringRAF){cancelAnimationFrame(ringRAF);ringRAF=null;}
+  if(fightIv){clearInterval(fightIv);fightIv=null;}
+  bobVis=false;
+  document.getElementById('rw').classList.remove('on');
+  document.getElementById('pbar').classList.remove('on');
+  const rod=RODS.find(r=>r.id===G.rod);
+  // Roll modifier
+  const mod=curFish.rar!=='boss'?rollModifier():null;
+  let w=+(curFish.mn+Math.random()*(curFish.mx-curFish.mn)).toFixed(2);
+  const lm=G.luckTimer>0?1.5:1;
+  let p=Math.round(curFish.price*w*(1+rod.lk*.04)*lm*(0.85+Math.random()*.3));
+  if(G.event==='bmoon'){w=+(w*(1.2+Math.random()*.5)).toFixed(2);p=Math.round(p*(1.3+Math.random()*.45));}
+  if(mod){w=+(w*mod.wMult).toFixed(2);p=Math.round(p*mod.pMult);}
+  curFish._w=w; curFish._p=p; curFish._mod=mod;
+  if(!G.disc[curFish.id])G.disc[curFish.id]={best:0,count:0,mods:{}};
+  G.disc[curFish.id].count++;
+  if(w>G.disc[curFish.id].best)G.disc[curFish.id].best=w;
+  if(mod){
+    if(!G.disc[curFish.id].mods)G.disc[curFish.id].mods={};
+    G.disc[curFish.id].mods[mod.id]=(G.disc[curFish.id].mods[mod.id]||0)+1;
+    G.discoveredMods[mod.id]=true;
+  }
+  G.caught++; G.streak++;
+  if(!G.biomeStreak[G.biome])G.biomeStreak[G.biome]=0;
+  G.biomeStreak[G.biome]++;
+  G.bossActive=null;
+  checkGuardianBoss();
+  let rewardTxt='';
+  if(curFish.rar==='boss'&&curFish.reward){
+    const rv=curFish.reward;
+    if(rv.t==='gold'){G.gold+=rv.amt||0;rewardTxt=`+${rv.amt}🪙 ${rv.n}!`;}
+    else{if(!G.mats[rv.n])G.mats[rv.n]=0;G.mats[rv.n]++;rewardTxt=`+1 ${rv.n}!`;}
+    G.trophies.push(curFish.id);
+  }
+  checkNotes();
+  showCatchPopup(rewardTxt);
+  buildComp(); updateUI();
+}
+
+function showCatchPopup(rewardTxt){
+  const mod=curFish._mod;
+  document.getElementById('cpemi').textContent=curFish.em;
+  // Name with modifier badge
+  const modBadge=mod?`<span style="display:inline-block;font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;background:${mod.col};color:${mod.txt};margin-left:5px;vertical-align:middle;">${mod.em} ${mod.name}</span>`:'';
+  document.getElementById('cpnam').innerHTML=curFish.name+modBadge;
+  const cr=document.getElementById('cprar');
+  cr.className='rbadge '+rbClass(curFish.rar); cr.textContent=rbLabel(curFish.rar);
+  const modTxt=mod?` [${mod.em}${mod.name}]`:'';
+  document.getElementById('cpdet').textContent=`${curFish._w}kg${modTxt}  •  ${curFish._p>0?curFish._p+'🪙':'Trophy only'}`;
+  document.getElementById('cpflav').textContent=curFish.desc;
+  const rr=document.getElementById('cprew');
+  if(rewardTxt){rr.textContent=rewardTxt;rr.style.display='block';}else rr.style.display='none';
+  document.getElementById('catchpop').classList.add('on');
+}
+
+function keepFish(){
+  if(curFish._p>0)G.bag.push({id:curFish.id,w:curFish._w,p:curFish._p,mod:curFish._mod?.id||null});
+  toast('🎒 Kept '+(curFish._mod?curFish._mod.em+' ':'')+curFish.name+' ('+curFish._w+'kg)');
+  document.getElementById('catchpop').classList.remove('on');
+  resetIdle();
+}
+function sellCaught(){
+  if(curFish._p>0){G.gold+=curFish._p;G.sold++;}
+  toast('💰 Sold '+(curFish._mod?curFish._mod.em+' ':'')+curFish.name+' for '+curFish._p+'🪙!');
+  document.getElementById('catchpop').classList.remove('on');
+  updateUI(); resetIdle();
+}
+function resetIdle(){
+  G.phase='idle'; curFish=null;
+  const cb=document.getElementById('castbtn');
+  cb.disabled=false; cb.textContent='🎣 Cast Line';
+}
+
+// ═══════════════════════════════════════════════
+// SECRET NOTES
+// ═══════════════════════════════════════════════
+function checkNotes(){
+  FISH.filter(f=>f.rar==='secret'&&f.note).forEach(sf=>{
+    if(G.notes[sf.id])return;
+    if(!sf.note.bio.includes(G.biome))return;
+    if(Math.random()<.035){
+      G.notes[sf.id]=true;
+      if(!G.disc[sf.id])G.disc[sf.id]={best:0,count:0,myst:true};
+      document.getElementById('notetxt').textContent=sf.note.clue;
+      document.getElementById('notepop').classList.add('on');
+      toast('📜 A mysterious note was found!');
+      buildComp();
+    }
+  });
+}
+function closeNote(){document.getElementById('notepop').classList.remove('on');}
+
+// ═══════════════════════════════════════════════
+// FISH PICKER
+// ═══════════════════════════════════════════════
+function pickFish(){
+  const period=getTimePeriod();
+  const rod=RODS.find(r=>r.id===G.rod);
+  // Boss check
+  if(G.bossActive){
+    const bev=BOSS_EVTS.find(b=>b.id===G.bossActive);
+    if(bev){
+      const boss=FISH.find(f=>f.id===bev.bossId);
+      if(boss&&boss.bio.includes(G.biome)){
+        const needRod=RODS.find(r=>r.id===boss.rodReq);
+        const myRod=RODS.find(r=>r.id===G.rod);
+        if(needRod&&myRod.pw<needRod.pw){toast('⚠️ Need '+(needRod.name||boss.rodReq)+' or better!');return null;}
+        return boss;
+      }
+    }
+  }
+  // Build eligible pool
+  let pool=FISH.filter(f=>{
+    if(f.rar==='boss')return false;
+    if(!f.bio.includes(G.biome))return false;
+    // Time check
+    if(f.wx&&G.wx!==f.wx&&G.wx!=='storm')return false;
+    if(f.tm&&!f.tm.includes('storm')){if(!f.tm.includes(period))return false;}
+    if(f.tm&&f.tm.includes('storm')&&G.wx!=='storm')return false;
+    // Rod requirement
+    if(f.rodReq){const nr=RODS.find(r=>r.id===f.rodReq);if(nr&&rod.pw<nr.pw)return false;}
+    // Secret conditions
+    if(f.rar==='secret'){
+      if(!G.notes[f.id])return false;
+      if(f.sc==='fullmoon')return G.fullMoon&&period==='midnight';
+      if(f.sc==='fifty')return G.streak>=50;
+      if(f.sc==='threethirty')return Math.floor(G.gt/60)===3&&Math.floor(G.gt%60)===33;
+      if(f.sc==='rainrainbow')return G.wx==='rain';
+      if(f.sc==='noon_rainbow')return period==='noon'&&G.wx==='rain';
+      if(f.sc==='still_midnight')return period==='midnight'&&G.wx==='clear';
+      if(f.sc==='noon_heat')return period==='noon'&&(G.wx==='clear'||G.wx==='fog');
+      if(f.sc==='eclipse')return G.eclipse;
+      return false;
+    }
+    // River guardian: needs 30 catches in mtnriver
+    if(f.id==='arguardian'){
+      return (G.biomeStreak['mtnriver']||0)>=30;
+    }
+    // Special spawn conditions for non-secret fish (e.g. eclipse legendary)
+    if(f.sc==='eclipse')return G.eclipse;
+    return true;
+  });
+  if(!pool.length)pool=FISH.filter(f=>f.rar==='common'&&['pond','river'].some(b=>f.bio.includes(b)));
+  if(!pool.length)return FISH[0];
+  // Force rare
+  if(G.forceRare){
+    G.forceRare=false;
+    const hi=pool.filter(f=>['rare','epic','legendary'].includes(f.rar));
+    if(hi.length)return hi[Math.floor(Math.random()*hi.length)];
+  }
+  // Weights
+  const bw={common:50,uncommon:28,rare:12,epic:6,legendary:3,secret:1};
+  const weighted=pool.map(f=>{
+    let w=bw[f.rar]||5;
+    if(f.rar==='rare')w+=rod.lk*.5+(G.upg.lure?2:0);
+    if(f.rar==='epic')w+=rod.lk*.3;
+    if(f.rar==='legendary')w+=rod.lk*.2+(G.upg.mbait?2:0);
+    if(f.rar==='secret')w+=G.rod==='celestial'?.5:0;
+    if(f.rar==='common')w-=rod.lk*.3;
+    if(G.event==='frenzy')w*=2;
+    if(G.event==='bmoon'&&['rare','epic','legendary'].includes(f.rar))w*=1.8;
+    if(G.rod==='storm'&&f.wx==='storm')w*=2;
+    if(G.rod==='abyss'&&f.bio.includes('deepocean'))w*=1.5;
+    if(G.rod==='bamboo'&&f.rar==='uncommon')w*=1.3;
+    return{f,w:Math.max(.1,w)};
+  });
+  const tot=weighted.reduce((s,x)=>s+x.w,0);
+  let rv=Math.random()*tot;
+  for(const x of weighted){rv-=x.w;if(rv<=0)return x.f;}
+  return weighted[0].f;
+}
+
+// ═══════════════════════════════════════════════
+// BIOMES
+// ═══════════════════════════════════════════════
+function renderBiomes(){
+  const el=document.getElementById('biomelist');
+  el.innerHTML=BIOMES.map(b=>{
+    const own=G.biomes[b.id];
+    const hasLic=own?.lic||G.upg.glic;
+    const hasBoat=!b.boat||G.upg.boat;
+    const active=G.biome===b.id;
+    let act='',locked=false;
+    if(!own?.unlocked){
+      locked=true;
+      const cantBoat=b.boat&&!hasBoat;
+      act=`<span class="bprice">🔒 ${b.price}🪙${b.boat?' +🚣':''}</span><button class="bbuy" style="font-size:9px;margin-left:3px;" onclick="buyBiome('${b.id}')" ${G.gold<b.price||cantBoat?'disabled':''}>Unlock</button>`;
+    } else if(!hasLic){
+      act=`<span class="bprice">📜 ${b.lic}🪙</span><button class="bbuy" style="font-size:9px;margin-left:3px;" onclick="buyLic('${b.id}')" ${G.gold<b.lic?'disabled':''}>Licence</button>`;
+    } else {
+      act=active?'<span class="obadge">Here</span>':`<button class="ebtn" onclick="goTo('${b.id}')">Go</button>`;
+    }
+    return `<div class="bbtn ${active?'cur':''}" style="${locked?'opacity:.55':''}">
+      <div style="font-weight:700;font-size:11px;">${b.em} ${b.name}</div>
+      <div style="font-size:9px;color:var(--txm);margin:1px 0 3px;">${b.desc}</div>
+      <div class="brow">${act}</div>
+    </div>`;
+  }).join('');
+}
+
+function buyBiome(id){
+  const b=BIOMES.find(x=>x.id===id);
+  if(!b)return;
+  if(b.boat&&!G.upg.boat){toast('⚠️ Need a Rowboat first!');return;}
+  if(G.gold<b.price){toast('Not enough gold!');return;}
+  showModal(`Unlock ${b.em} ${b.name}`,`Cost: ${b.price}🪙${b.boat?' (Rowboat needed)':''}\n${b.desc}\n\nFishing licence costs ${b.lic}🪙 separately.`,()=>{
+    G.gold-=b.price; G.biomes[id]={unlocked:true,lic:false};
+    toast('🗺️ Unlocked '+b.name+'!'); updateUI(); renderBiomes();
+  });
+}
+function buyLic(id){
+  const b=BIOMES.find(x=>x.id===id);
+  if(!b||!G.biomes[id])return;
+  if(G.gold<b.lic){toast('Not enough gold!');return;}
+  showModal(`Licence for ${b.name}`,`Fishing Licence: ${b.lic}🪙\nAllows fishing in ${b.name}.`,()=>{
+    G.gold-=b.lic; G.biomes[id].lic=true;
+    toast('📜 Got licence for '+b.name+'!'); updateUI(); renderBiomes();
+  });
+}
+function goTo(id){
+  G.biome=id; G.streak=0; G.biomeStreak[id]=G.biomeStreak[id]||0;
+  if(G.catBiome===id)showCatShop();
+  toast('⛵ Travelled to '+BIOMES.find(b=>b.id===id)?.name+'!');
+  updateUI(); renderBiomes();
+}
+
+// ═══════════════════════════════════════════════
+// BAG
+// ═══════════════════════════════════════════════
+function renderBag(){
+  const el=document.getElementById('baglist');
+  if(!G.bag.length){el.innerHTML='<div style="text-align:center;color:var(--txm);font-size:11px;padding:14px 0;">No fish yet!</div>';return;}
+  const rc={common:'rdc',uncommon:'rdu',rare:'rdr',epic:'rde',legendary:'rdl',secret:'rds',boss:'rdb'};
+  el.innerHTML=G.bag.map((e,i)=>{
+    const f=FISH.find(x=>x.id===e.id);
+    const mod=e.mod?MODIFIERS.find(m=>m.id===e.mod):null;
+    const modBadge=mod?`<span style="font-size:8px;font-weight:700;padding:1px 4px;border-radius:4px;background:${mod.col};color:${mod.txt};margin-right:2px;">${mod.em}</span>`:'';
+    return `<div class="fitem">
+      <span class="femoji">${f?.em||'🐟'}</span>
+      <div class="finfo"><div class="fname">${modBadge}${f?.name||e.id}</div><div class="fsub">${e.w}kg</div></div>
+      <div class="fprice">${e.p}🪙</div>
+      <div class="rdot ${rc[f?.rar||'common']}"></div>
+      <button class="sbtn" onclick="sellOne(${i})">Sell</button>
+    </div>`;
+  }).join('');
+}
+function sellOne(i){
+  const e=G.bag[i],f=FISH.find(x=>x.id===e.id);
+  G.gold+=e.p;G.sold++;G.bag.splice(i,1);
+  toast('💰 Sold '+(f?.name||e.id)+' for '+e.p+'🪙');
+  updateUI();renderBag();
+}
+function sellAll(){
+  if(!G.bag.length){toast('No fish to sell!');return;}
+  const tot=G.bag.reduce((s,e)=>s+e.p,0);
+  G.sold+=G.bag.length;G.bag=[];G.gold+=tot;
+  toast('💰 Sold all for '+tot+'🪙!');
+  updateUI();renderBag();
+}
+
+// ═══════════════════════════════════════════════
+// SHOP
+// ═══════════════════════════════════════════════
+function renderShop(){
+  let h='<div class="shtit">RODS</div>';
+  RODS.filter(r=>r.id!=='twig').forEach(r=>{
+    const own=G.rods[r.id],act=G.rod===r.id;
+    h+=`<div class="shitem">
+      <div class="shin">${r.name}${act?' ✓':''}</div>
+      <div class="shde">${r.desc}${r.spec?` <span style="color:var(--rc);font-size:8px;">[${r.spec}]</span>`:''}</div>
+      <div style="display:flex;gap:3px;margin-bottom:3px;flex-wrap:wrap;">
+        <span style="font-size:8px;background:#f0e8d0;padding:1px 3px;border-radius:2px;">⚡${r.pw}</span>
+        <span style="font-size:8px;background:#d8f0e8;padding:1px 3px;border-radius:2px;">🌀${r.sp}</span>
+        <span style="font-size:8px;background:#e8d8f0;padding:1px 3px;border-radius:2px;">🍀${r.lk}</span>
+        <span style="font-size:8px;background:#f0d8d8;padding:1px 3px;border-radius:2px;">🛡️${r.dur}</span>
+      </div>
+      <div class="shbr"><span class="shp">${r.price}🪙</span>
+        <div style="display:flex;align-items:center;gap:2px;">
+          ${own?`<span class="obadge">${act?'Equipped':'Owned'}</span>${!act?`<button class="ebtn" onclick="equipRod('${r.id}')">Equip</button>`:''}`:
+          `<button class="bbuy" onclick="buyRod('${r.id}')" ${G.gold<r.price?'disabled':''}>Buy</button>`}
+        </div>
+      </div>
+    </div>`;
+  });
+  h+='<div class="shtit">UPGRADES & COSMETICS</div>';
+  UPGRADES.forEach(u=>{
+    const own=G.upg[u.id];
+    h+=`<div class="shitem">
+      <div class="shin">${u.name} <span style="font-size:8px;padding:1px 3px;border-radius:2px;background:${u.type==='cosmetic'?'#f0d8f0':'#d8f0e0'};color:${u.type==='cosmetic'?'#7a5080':'#3a7050'}">${u.type}</span></div>
+      <div class="shde">${u.desc}</div>
+      <div class="shbr"><span class="shp">${u.price}🪙</span>
+        ${own?'<span class="obadge">Owned</span>':`<button class="bbuy" onclick="buyUpg('${u.id}')" ${G.gold<u.price?'disabled':''}>Buy</button>`}
+      </div>
+    </div>`;
+  });
+  document.getElementById('shoplist').innerHTML=h;
+}
+function buyRod(id){const r=RODS.find(x=>x.id===id);if(G.gold<r.price){toast('Not enough gold!');return;}G.gold-=r.price;G.rods[id]=true;equipRod(id);toast('🎣 Got '+r.name+'!');updateUI();renderShop();}
+function equipRod(id){G.rod=id;updateRodCard();toast('Equipped '+RODS.find(r=>r.id===id).name+'!');updateUI();renderShop();}
+function buyUpg(id){const u=UPGRADES.find(x=>x.id===id);if(G.gold<u.price){toast('Not enough gold!');return;}G.gold-=u.price;G.upg[id]=true;toast('✨ Got '+u.name+'!');updateUI();renderShop();if(id==='boat')renderBiomes();}
+
+// ═══════════════════════════════════════════════
+// PACK
+// ═══════════════════════════════════════════════
+function renderPack(){
+  const el=document.getElementById('packlist');
+  if(!G.pack.length){el.innerHTML='<div style="text-align:center;color:var(--txm);font-size:11px;padding:12px 0;">No items. Find Purrcy!</div>';return;}
+  const cnt={};G.pack.forEach(id=>{cnt[id]=(cnt[id]||0)+1;});
+  el.innerHTML=Object.entries(cnt).map(([id,n])=>{
+    const it=CATITEMS.find(x=>x.id===id);if(!it)return'';
+    return `<div class="pitem">
+      <div class="pname">${it.em} ${it.name} ${n>1?`<span style="font-size:8px;background:var(--gd);color:#fff;padding:1px 4px;border-radius:6px;">x${n}</span>`:''}</div>
+      <div class="pdesc">${it.desc}</div>
+      <button class="pubtn" onclick="usePack('${id}')">Use</button>
+    </div>`;
+  }).join('');
+}
+function usePack(id){
+  const i=G.pack.indexOf(id);if(i===-1)return;
+  G.pack.splice(i,1);
+  const it=CATITEMS.find(x=>x.id===id);if(!it)return;
+  if(it.fx==='time'){const tm={dawn:240,morning:420,noon:720,afternoon:840,evening:1020,dusk:1200,night:1320,midnight:0};G.gt=tm[it.val]||0;updateTimeDom();}
+  else if(it.fx==='weather'){setWx(it.val,180);}
+  else if(it.fx==='force_rare'){G.forceRare=true;toast('🌈 Next catch guaranteed Rare+!');}
+  else if(it.fx==='luck'){G.luckTimer=it.val;toast('🍀 Luck doubled for 5 min!');}
+  else if(it.fx==='fullmoon'){G.fullMoon=true;G.gt=0;updateTimeDom();toast('🌕 Full moon activated!');}
+  toast('Used '+it.em+' '+it.name+'!');
+  renderPack();
+}
+
+// ═══════════════════════════════════════════════
+// CAT SHOP
+// ═══════════════════════════════════════════════
+function showCatShop(){
+  const items=[...CATITEMS].sort(()=>Math.random()-.5).slice(0,3);
+  document.getElementById('catitems').innerHTML=items.map(it=>`
+    <div class="shitem">
+      <div class="shin">${it.em} ${it.name}</div>
+      <div class="shde">${it.desc}</div>
+      <div class="shbr"><span class="shp">${it.price}🪙</span>
+        <button class="bbuy" onclick="buyCat('${it.id}')" ${G.gold<it.price?'disabled':''}>Buy</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('catpop').classList.add('on');
+}
+function buyCat(id){
+  const it=CATITEMS.find(x=>x.id===id);
+  if(!it||G.gold<it.price){toast('Not enough gold!');return;}
+  G.gold-=it.price;G.pack.push(id);toast('🐱 Bought '+it.em+' '+it.name+'!');
+  updateUI();showCatShop();renderPack();
+}
+function closeCat(){document.getElementById('catpop').classList.remove('on');G.catBiome=null;G.catCool=600;}
+
+// ═══════════════════════════════════════════════
+// COMPENDIUM
+// ═══════════════════════════════════════════════
+let CF='all';
+function setCF(f,btn){
+  CF=f;
+  document.querySelectorAll('.cfb').forEach(b=>b.classList.remove('act'));
+  btn.classList.add('act');
+  buildComp();
+}
+function buildComp(){
+  const disc=Object.values(G.disc).filter(d=>d.count>0||d.myst).length;
+  document.getElementById('cprog').textContent=disc+' / '+FISH.length+' discovered';
+  const anySecret=Object.keys(G.notes).length>0||FISH.some(f=>f.rar==='secret'&&G.disc[f.id]?.count>0);
+  document.getElementById('sfiltbtn').style.display=anySecret?'':'none';
+
+  if(CF==='mods'){
+    const found=MODIFIERS.filter(m=>G.discoveredMods[m.id]);
+    if(!found.length){
+      document.getElementById('clist').innerHTML='<div style="text-align:center;color:var(--txm);font-size:11px;padding:16px 6px;font-style:italic;">No modifiers yet.<br>Rare variants appear randomly when fishing!</div>';
+      return;
+    }
+    document.getElementById('clist').innerHTML=found.map(m=>{
+      let total=0;Object.values(G.disc).forEach(d=>{if(d.mods&&d.mods[m.id])total+=d.mods[m.id];});
+      return `<div class="ce" style="border-left:3px solid ${m.col};">
+        <div class="cetop"><span class="ceem" style="font-size:18px;">${m.em}</span><span class="cenm" style="font-weight:700;">${m.name}</span><span class="cerb" style="background:${m.col};color:${m.txt};">×${total}</span></div>
+        <div class="cedt">${m.desc}</div>
+        <div class="cedt" style="margin-top:2px;color:var(--gd);">Wt ×${m.wMult} • Price ×${m.pMult}</div>
+      </div>`;
+    }).join('');
+    return;
+  }
+
+  const visibleFish=FISH.filter(f=>{
+    if(CF!=='all'&&f.rar!==CF)return false;
+    if(f.rar==='secret'&&!G.notes[f.id]&&!G.disc[f.id]?.count)return false;
+    return true;
+  });
+  document.getElementById('clist').innerHTML=visibleFish.map(f=>{
+    const d=G.disc[f.id];
+    const rb=rbClass(f.rar);
+    const sl={common:'Com',uncommon:'Unc',rare:'Rare',epic:'Epic',legendary:'Leg',secret:'🔮',boss:'Boss'}[f.rar]||f.rar;
+    if(d&&d.count>0){
+      const modBadges=d.mods?Object.keys(d.mods).map(mid=>{const mm=MODIFIERS.find(x=>x.id===mid);return mm?`<span style="font-size:7px;padding:1px 3px;border-radius:3px;background:${mm.col};color:${mm.txt};margin-right:1px;">${mm.em}</span>`:''}).join(''):'';
+      return `<div class="ce" data-id="${f.id}" onclick="openComp(this.dataset.id)">
+        <div class="cetop"><span class="ceem">${f.em}</span><span class="cenm">${f.name}</span><span class="cerb ${rb}">${sl}</span></div>
+        <div class="cedt">Best: ${d.best}kg • ×${d.count} • ${f.price>0?f.price+'🪙':'Trophy'} ${modBadges}</div>
+      </div>`;
+    } else if(d?.myst||G.notes[f.id]){
+      return `<div class="ce" style="opacity:.72;cursor:default;border-style:dashed;">
+        <div class="cetop"><span class="ceem">❓</span><span class="cenm" style="font-style:italic;color:var(--sc);">??? (Rumoured)</span><span class="cerb ${rb}">${sl}</span></div>
+        <div class="cedt" style="font-style:italic;color:var(--sc);">A cryptic note hints at its existence...</div>
+      </div>`;
+    } else {
+      return `<div class="ce lk">
+        <div class="cetop"><span class="ceem">❓</span><span class="cenm">???</span><span class="cerb ${rb}">${sl}</span></div>
+        <div class="cedt">Not yet discovered</div>
+      </div>`;
+    }
+  }).join('');
+}
+function openComp(id){
+  const f=FISH.find(x=>x.id===id);const d=G.disc[id];
+  if(!f||!d||!d.count)return;
+  document.getElementById('cdemi').textContent=f.em;
+  document.getElementById('cdnam').textContent=f.name;
+  const cr=document.getElementById('cdrar');cr.className='rbadge '+rbClass(f.rar);cr.textContent=rbLabel(f.rar);
+  const bn=f.bio.map(b=>BIOMES.find(x=>x.id===b)?.name||b).join(', ');
+  const tm=Array.isArray(f.tm)?f.tm.join(', '):'Any';
+  const modLine=d.mods&&Object.keys(d.mods).length?'<b>Modifiers found:</b> '+Object.keys(d.mods).map(mid=>{const mm=MODIFIERS.find(x=>x.id===mid);return mm?`<span style="font-size:9px;padding:1px 4px;border-radius:3px;background:${mm.col};color:${mm.txt};">${mm.em} ${mm.name}</span>`:''}).join(' ')+'<br>':'';
+  document.getElementById('cdinfo').innerHTML=
+    `<b>Caught:</b> ${d.count} time${d.count!==1?'s':''}<br>`+
+    `<b>Best weight:</b> ${d.best} kg<br>`+
+    `<b>Base value:</b> ${f.price>0?f.price+' 🪙':'Trophy only'}<br>`+
+    `<b>Weight range:</b> ${f.mn}–${f.mx} kg<br>`+
+    `<b>Biomes:</b> ${bn}<br>`+
+    `<b>Time:</b> ${tm}<br>`+
+    (f.wx?`<b>Weather:</b> ${f.wx}<br>`:'')+
+    (f.rodReq?`<b>Rod needed:</b> ${RODS.find(r=>r.id===f.rodReq)?.name||f.rodReq}<br>`:'')+
+    (f.reward?`<b>Boss reward:</b> ${f.reward.n}<br>`:'')+
+    modLine+
+    `<br><i style="line-height:1.6">${f.info}</i>`;
+  document.getElementById('cdetpop').classList.add('on');
+}
+function closeCDet(){document.getElementById('cdetpop').classList.remove('on');}
+
+// ═══════════════════════════════════════════════
+// NPC
+// ═══════════════════════════════════════════════
+function showNPC(name,txt){
+  const el=document.getElementById('npcpop');
+  document.getElementById('npcn').textContent=name;
+  document.getElementById('npct').textContent=txt;
+  const W=PC.width,H=PC.height;
+  el.style.left=Math.max(8,Math.min(W-210,W*.22))+'px';
+  el.style.top=Math.max(8,H*.18)+'px';
+  el.style.display='block';
+}
+function closeNPC(){document.getElementById('npcpop').style.display='none';}
+
+// ═══════════════════════════════════════════════
+// TABS & PANELS
+// ═══════════════════════════════════════════════
+function showTab(t){
+  ['biome','rod','bag','shop','pack'].forEach(x=>{
+    const el=document.getElementById('tab-'+x);
+    el.classList.toggle('show',x===t);
+  });
+  document.querySelectorAll('.nb').forEach((b,i)=>b.classList.toggle('act',['biome','rod','bag','shop','pack'][i]===t));
+  if(t==='bag')renderBag();
+  if(t==='shop')renderShop();
+  if(t==='biome')renderBiomes();
+  if(t==='pack')renderPack();
+}
+
+function togglePanel(side){
+  const el=document.getElementById(side==='l'?'lpanel':'rpanel');
+  el.classList.toggle('open');
+  setTimeout(resizeC,230);
+}
+
+// ═══════════════════════════════════════════════
+// UI UPDATES
+// ═══════════════════════════════════════════════
+function updateUI(){
+  document.getElementById('gdisp').textContent=G.gold;
+  document.getElementById('tgold').textContent=G.gold;
+  document.getElementById('bgcnt').textContent=G.bag.length;
+  document.getElementById('sdcnt').textContent=G.sold;
+  document.getElementById('tcaught').textContent=G.caught;
+  updateRodCard();
+  const activeTab=document.querySelector('.nb.act');
+  if(activeTab){
+    const t=activeTab.textContent.toLowerCase().trim();
+    if(t==='bag')renderBag();
+    if(t==='shop')renderShop();
+    if(t==='biome')renderBiomes();
+    if(t==='pack')renderPack();
+  }
+}
+
+function updateRodCard(){
+  const r=RODS.find(x=>x.id===G.rod)||RODS[0];
+  document.getElementById('rodcard').innerHTML=`
+    <div class="rcard">
+      <div class="rname">${r.name}</div>
+      <div style="font-size:9px;color:var(--txm);margin:2px 0 5px;">${r.desc}</div>
+      <div class="smrow"><span>⚡ Power</span><span>${r.pw}</span></div>
+      <div class="mbar"><div class="mbf" style="width:${r.pw/10*100}%;background:#e8734a"></div></div>
+      <div class="smrow"><span>🌀 Speed</span><span>${r.sp}</span></div>
+      <div class="mbar"><div class="mbf" style="width:${r.sp/10*100}%;background:#4a9b8e"></div></div>
+      <div class="smrow"><span>🍀 Luck</span><span>${r.lk}</span></div>
+      <div class="mbar"><div class="mbf" style="width:${r.lk/10*100}%;background:#9b6ee8"></div></div>
+      <div class="smrow"><span>🛡️ Durability</span><span>${r.dur}</span></div>
+      <div class="mbar"><div class="mbf" style="width:${r.dur/15*100}%;background:#c88a20"></div></div>
+      ${r.spec?`<div style="margin-top:4px;font-size:9px;color:var(--rc);font-weight:700;">✨ ${r.spec}</div>`:''}
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════
+// COMMANDS
+// ═══════════════════════════════════════════════
+function runCmd(raw){
+  const input=document.getElementById('cmdinput');
+  const cmd=(raw||'').trim().toLowerCase();
+  if(!cmd){return;}
+  input.value='';
+  if(COMMANDS[cmd]){COMMANDS[cmd].fn();return;}
+  // Partial match
+  const match=Object.keys(COMMANDS).find(k=>k.startsWith(cmd));
+  if(match){COMMANDS[match].fn();return;}
+  cmdToast('❓ Unknown command. Type /help for a list.');
+}
+
+function cmdToast(m){
+  // Use the main toast but with a slightly different prefix so it's clearly a command response
+  toast('📟 '+m);
+}
+
+function showCmdHelp(){
+  const el=document.getElementById('helplist');
+  el.innerHTML=Object.entries(COMMANDS).map(([k,v])=>
+    `<div style="display:flex;gap:6px;padding:2px 0;border-bottom:1px solid rgba(0,0,0,.05);">
+      <code style="color:var(--wdd);font-weight:700;min-width:90px;font-size:10px;">${k}</code>
+      <span style="color:var(--txm);font-size:10px;">${v.desc}</span>
+    </div>`
+  ).join('');
+  document.getElementById('helppop').classList.add('on');
+}
+
+function showModsCmd(){
+  const found=MODIFIERS.filter(m=>G.discoveredMods[m.id]);
+  if(!found.length){cmdToast('No modifiers discovered yet!');return;}
+  cmdToast('✨ Modifiers: '+found.map(m=>m.em+' '+m.name).join(', '));
+}
+
+function showMatsCmd(){
+  const mats=Object.entries(G.mats);
+  if(!mats.length){cmdToast('No boss materials collected yet.');return;}
+  cmdToast('🧪 Materials: '+mats.map(([n,c])=>n+' ×'+c).join(', '));
+}
+
+// ═══════════════════════════════════════════════
+// ECLIPSE EVENT
+// ═══════════════════════════════════════════════
+function triggerEclipse(){
+  G.eclipse=true; G.eclipseTimer=60; // 60 real seconds
+  showBanner('🌑 Solar Eclipse! Rare creatures stir in the darkness...','rgba(30,0,60,.95)');
+  document.getElementById('evt-ticker').textContent='🌑 Eclipse active — Eclipse Eel may appear!';
+  toast('🌑 Solar Eclipse triggered!');
+  // Darken the no overlay heavily for eclipse effect
+  const no=document.getElementById('no');
+  no.style.background='rgba(10,0,30,.75)';
+  no.style.transition='background 2s';
+  setTimeout(()=>{
+    G.eclipse=false;
+    no.style.background='rgba(10,15,50,0)';
+    document.getElementById('evt-ticker').textContent='';
+    toast('☀️ The eclipse has passed.');
+  },60000);
+}
+
+// ═══════════════════════════════════════════════
+// WORLD EVENT HELPER (for commands)
+// ═══════════════════════════════════════════════
+function triggerWEvent(id){
+  const ev=WEVENTS.find(e=>e.id===id);
+  if(!ev)return;
+  G.event=ev.id; G.evtTimer=ev.dur;
+  showBanner(ev.name+' — '+ev.desc,ev.col);
+  document.getElementById('evt-ticker').textContent='⚡ '+ev.name+' active!';
+  toast(ev.name+' triggered!');
+}
+
+// ═══════════════════════════════════════════════
+// GUARDIAN BOSS TICK CHECK (in startTick)
+// ═══════════════════════════════════════════════
+function checkGuardianBoss(){
+  if(G.biome==='mtnriver'&&(G.biomeStreak['mtnriver']||0)>=30&&!G.bossActive&&!G.bossShown['guardian_boss']){
+    const bev=BOSS_EVTS.find(b=>b.id==='guardian_boss');
+    if(bev){
+      G.bossActive='guardian_boss'; G.bossShown['guardian_boss']=true;
+      showBanner(bev.msg,'rgba(20,60,20,.92)');
+      document.getElementById('evt-ticker').textContent='👹 BOSS: Ancient River Guardian has appeared!';
+      setTimeout(()=>showNPC('🌿 River Spirit',bev.npc),2000);
+    }
+  }
+}
+
+// ═══════════════════════════════════════════════
+// INIT
+// ═══════════════════════════════════════════════
+window.addEventListener('load',()=>{
+  // Canvas init after layout paint
+  requestAnimationFrame(()=>{
+    requestAnimationFrame(()=>{
+      initCanvas();
+    });
+  });
+  renderBiomes();
+  renderShop();
+  updateUI();
+  buildComp();
+  updateTimeDom();
+  setWx('clear');
+  startTick();
+});
+</script>
+</body>
+</html>
