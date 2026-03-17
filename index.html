@@ -13,18 +13,99 @@
 <!-- Inline SVG favicon -->
 <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><text y='26' font-size='28'>🎣</text></svg>">
 <link rel="apple-touch-icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'><rect width='180' height='180' rx='40' fill='%235c4228'/><text y='135' x='14' font-size='130'>🎣</text></svg>">
-<!-- Inline Web App Manifest -->
+<!-- Inline Web App Manifest + Service Worker (offline support) -->
 <script>
 (function(){
-  const manifest={name:'Corner Pond',short_name:'Corner Pond',description:'A relaxing fishing game',start_url:'.',display:'standalone',background_color:'#1a1208',theme_color:'#5c4228',orientation:'landscape',icons:[{src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%235c4228'/><text y='400' x='40' font-size='420'>🎣</text></svg>",sizes:'512x512',type:'image/svg+xml'}]};
-  const blob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
-  const url=URL.createObjectURL(blob);
-  const link=document.createElement('link');
-  link.rel='manifest';link.href=url;
-  document.head.appendChild(link);
+  // ── Manifest ──────────────────────────────────────────────
+  const manifest={
+    name:'Corner Pond',
+    short_name:'Corner Pond',
+    description:'A relaxing fishing game. Cast your line, catch rare fish.',
+    start_url:'.',
+    display:'standalone',
+    background_color:'#1a1208',
+    theme_color:'#5c4228',
+    orientation:'any',
+    icons:[
+      {src:"data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'><rect width='512' height='512' rx='80' fill='%235c4228'/><text y='400' x='40' font-size='420'>🎣</text></svg>",
+       sizes:'512x512',type:'image/svg+xml',purpose:'any maskable'}
+    ]
+  };
+  const mBlob=new Blob([JSON.stringify(manifest)],{type:'application/manifest+json'});
+  const mLink=document.createElement('link');
+  mLink.rel='manifest'; mLink.href=URL.createObjectURL(mBlob);
+  document.head.appendChild(mLink);
+
+  // ── Service Worker (cache-first, full offline) ────────────
+  if(!('serviceWorker' in navigator)) return;
+
+  // The SW script: on install, cache this page; on fetch, serve from cache
+  // We use the page's own URL as the cache key so re-deploying a new version
+  // updates the cache automatically (cache name includes a timestamp baked in
+  // at registration time so each new HTML file gets a fresh cache).
+  const CACHE_VER = 'cp-v' + (document.lastModified || Date.now()).toString().slice(-8);
+  const swScript = `
+const CACHE='${CACHE_VER}';
+const OFFLINE_URL=self.location.href.replace(/\\/sw-[^/]+\\.js.*/,'');
+
+self.addEventListener('install',e=>{
+  e.waitUntil(
+    caches.open(CACHE).then(c=>c.add(OFFLINE_URL)).then(()=>self.skipWaiting())
+  );
+});
+
+self.addEventListener('activate',e=>{
+  e.waitUntil(
+    caches.keys().then(keys=>
+      Promise.all(keys.filter(k=>k!==CACHE).map(k=>caches.delete(k)))
+    ).then(()=>self.clients.claim())
+  );
+});
+
+self.addEventListener('fetch',e=>{
+  if(e.request.method!=='GET') return;
+  e.respondWith(
+    caches.match(e.request).then(cached=>{
+      if(cached) return cached;
+      return fetch(e.request).then(resp=>{
+        if(resp&&resp.status===200&&resp.type!=='opaque'){
+          const clone=resp.clone();
+          caches.open(CACHE).then(c=>c.put(e.request,clone));
+        }
+        return resp;
+      }).catch(()=>caches.match(OFFLINE_URL));
+    })
+  );
+});
+`;
+
+  const swBlob=new Blob([swScript],{type:'application/javascript'});
+  const swUrl=URL.createObjectURL(swBlob);
+
+  navigator.serviceWorker.register(swUrl,{scope:'/'})
+    .then(reg=>{
+      console.log('[SW] Registered. Scope:',reg.scope);
+      reg.addEventListener('updatefound',()=>{
+        const nw=reg.installing;
+        nw.addEventListener('statechange',()=>{
+          if(nw.state==='installed'&&navigator.serviceWorker.controller){
+            // New version available — show a subtle toast if the game is loaded
+            if(typeof toast==='function') toast('🔄 Update cached — refresh for latest version');
+          }
+        });
+      });
+    })
+    .catch(e=>console.warn('[SW] Registration failed:',e));
 })();
 </script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+/* Font fallbacks so the game is readable even without Google Fonts */
+body{font-family:'Nunito',system-ui,'Segoe UI',Helvetica,Arial,sans-serif;}
+.lora,.gtitle,.ptitle,.rbadge,.pclose{font-family:'Lora',Georgia,'Times New Roman',serif;}
+</style>
 <style>
 :root{
   --pb:#fdf6e8;--pbr:#d4b896;--wd:#8b6b42;--wdd:#5c4228;
