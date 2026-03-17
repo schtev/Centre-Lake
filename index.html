@@ -302,6 +302,162 @@ body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:
 #console-log .cline.sys{color:#909090;font-style:italic;}
 ::-webkit-scrollbar{width:4px;}
 ::-webkit-scrollbar-thumb{background:var(--pbr);border-radius:2px;}
+
+/* ═══════════════════════════════════════════
+   MOBILE  ≤700px or touch pointer
+   ═══════════════════════════════════════════ */
+@media (max-width:700px),(pointer:coarse){
+  /* Top bar compact */
+  #topbar{padding:4px 8px;gap:5px;flex-wrap:nowrap;padding-top:max(4px,env(safe-area-inset-top));}
+  .gtitle{font-size:13px;letter-spacing:0;}
+  #time-disp{font-size:10px;min-width:0;padding:2px 5px;}
+  #wx-disp{font-size:10px;padding:2px 4px;}
+  .tstat{display:none;}
+  #evt-ticker{flex:1;min-width:0;font-size:10px;}
+  #save-ind{display:none;}
+
+  /* Canvas fills screen */
+  #wrap{flex-direction:column;}
+  #gc{
+    position:fixed;
+    top:calc(30px + env(safe-area-inset-top));
+    left:0;right:0;bottom:0;
+    z-index:1;
+  }
+
+  /* Side panels → bottom sheet drawers */
+  #lpanel,#rpanel{
+    position:fixed !important;
+    bottom:0 !important;left:0 !important;right:0 !important;
+    width:100% !important;min-width:0 !important;
+    height:0;
+    border:none !important;
+    border-radius:18px 18px 0 0;
+    box-shadow:0 -4px 28px rgba(0,0,0,.6);
+    transition:height .26s cubic-bezier(.4,0,.2,1);
+    z-index:35;
+    overflow:hidden;
+    opacity:1;
+  }
+  #lpanel.open,#rpanel.open{height:72vh !important;}
+  #lpanel.open>*,#rpanel.open>*{display:flex !important;}
+
+  /* Drag handle */
+  #lpanel::before,#rpanel::before{
+    content:'';display:block;width:38px;height:4px;
+    background:rgba(0,0,0,.22);border-radius:2px;
+    margin:9px auto 4px;flex-shrink:0;
+  }
+
+  /* Backdrop */
+  #drawer-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.48);z-index:34;}
+  #drawer-bg.on{display:block;}
+
+  /* Toggle buttons → floating bottom-left / right */
+  .ptog{
+    position:fixed !important;
+    top:auto !important;
+    bottom:calc(12px + env(safe-area-inset-bottom)) !important;
+    transform:none !important;
+    writing-mode:horizontal-tb !important;
+    font-size:11px !important;
+    padding:9px 11px !important;
+    border-radius:12px !important;
+    letter-spacing:0;z-index:33;line-height:1.3;
+  }
+  #tgl{left:8px !important;right:auto !important;}
+  #tgr{right:8px !important;left:auto !important;}
+
+  /* Big cast button */
+  #castbtn{font-size:19px !important;padding:15px 44px !important;border-radius:60px !important;box-shadow:0 5px 0 var(--wdd) !important;}
+  #fov{padding-bottom:calc(72px + env(safe-area-inset-bottom)) !important;}
+
+  /* Reel SVG scales */
+  #ring-wrap{width:min(78vw,210px) !important;height:min(78vw,210px) !important;}
+  #ring-wrap svg{width:100% !important;height:100% !important;}
+  #rstat{font-size:14px !important;}
+  #rw{gap:6px !important;}
+  #track-wrap{width:94% !important;max-width:94vw !important;}
+  #track-outer{width:100% !important;}
+
+  /* Popups → bottom sheets */
+  .pop{
+    top:auto !important;left:0 !important;right:0 !important;bottom:0 !important;
+    transform:none !important;
+    border-radius:18px 18px 0 0 !important;
+    max-width:100% !important;width:100% !important;
+    padding:20px 16px calc(16px + env(safe-area-inset-bottom)) !important;
+    border-bottom:none !important;
+    max-height:85vh;overflow-y:auto;
+  }
+
+  /* Stats in left panel: horizontal strip */
+  #statsbox{flex-direction:row !important;gap:0;padding:7px 10px;}
+  .srow{flex:1;flex-direction:column;align-items:center;margin-bottom:0;gap:0;}
+  .slbl{font-size:9px;color:var(--txm);}
+  .sval{font-size:15px;}
+
+  /* Larger nav tabs */
+  #navbtns{padding:6px 8px;}
+  .nb{font-size:12px;padding:8px 2px;}
+
+  /* Bigger touch targets */
+  .sall{padding:11px;font-size:13px;}
+  .sbtn{font-size:12px;padding:6px 10px;}
+  .bbuy,.ebtn,.pubtn{font-size:12px;padding:7px 12px;}
+  .pclose{padding:9px 22px;font-size:13px;}
+
+  /* Shop items more readable */
+  .shin{font-size:12px;}
+  .shde{font-size:11px;}
+
+  /* Compendium */
+  .ceem{font-size:20px;}
+  .cenm{font-size:12px;}
+  .cedt{font-size:11px;}
+  .cfb{font-size:10px;padding:4px 6px;}
+
+  /* NPC above bottom buttons */
+  #npcpop{bottom:calc(80px + env(safe-area-inset-bottom));top:auto !important;left:8px !important;right:8px !important;max-width:none;}
+
+  /* Mobile stats — top right corner, below topbar */
+  #mob-stats{
+    display:flex;
+    position:fixed;
+    top:calc(34px + env(safe-area-inset-top));
+    right:8px;
+    left:auto;
+    transform:none;
+    background:rgba(18,12,4,.82);
+    border-radius:10px;
+    padding:4px 10px;gap:10px;
+    z-index:12;font-size:11px;color:#fdf0d0;font-weight:700;
+    pointer-events:none;white-space:nowrap;
+    flex-direction:column;
+    align-items:flex-end;
+    gap:3px;
+  }
+  #mob-stats .ms{display:flex;align-items:center;gap:4px;}
+  #mob-stats .mv{color:var(--gd);}
+
+  /* progress bar left side on mobile */
+  #pbar{right:auto !important;left:6px !important;}
+
+  /* Console full-screen on mobile */
+  #console-overlay{padding-bottom:env(safe-area-inset-bottom);}
+
+  /* modal full width */
+  #mbox{max-width:100%;border-radius:18px 18px 0 0;margin-top:auto;}
+}
+
+/* Landscape phone */
+@media (max-width:900px) and (max-height:500px) and (pointer:coarse){
+  #lpanel.open,#rpanel.open{height:88vh !important;}
+  .ptog{bottom:calc(6px + env(safe-area-inset-bottom)) !important;font-size:10px !important;padding:7px 9px !important;}
+  #castbtn{font-size:16px !important;padding:11px 34px !important;}
+  #fov{padding-bottom:calc(52px + env(safe-area-inset-bottom)) !important;}
+  #mob-stats{top:calc(30px + env(safe-area-inset-top));font-size:10px;padding:3px 8px;}
+}
 </style>
 </head>
 <body>
@@ -318,6 +474,15 @@ body{font-family:'Nunito',sans-serif;background:#1a1208;color:var(--tx);display:
 </div>
 
 <div id="wrap">
+  <!-- Drawer backdrop (mobile) -->
+  <div id="drawer-bg" onclick="closeAllDrawers()"></div>
+
+  <!-- Mobile stats strip (hidden on desktop via JS, shown on mobile via CSS) -->
+  <div id="mob-stats" style="display:none;">
+    <div class="ms">🪙 <span class="mv" id="mob-gold">0</span></div>
+    <div class="ms">🐟 <span class="mv" id="mob-caught">0</span></div>
+    <div class="ms">📍 <span class="mv" id="mob-biome">Pond</span></div>
+  </div>
   <!-- LEFT PANEL -->
   <div id="lpanel">
     <div class="ptitle">🎒 Tackle Box<small>Inventory &amp; Shop</small></div>
@@ -2607,10 +2772,32 @@ function showTab(t){
   if(t==='pack')renderPack();
 }
 
+function isMobile(){return window.matchMedia('(max-width:700px),(pointer:coarse)').matches;}
+
 function togglePanel(side){
   const el=document.getElementById(side==='l'?'lpanel':'rpanel');
+  const other=document.getElementById(side==='l'?'rpanel':'lpanel');
+  const bg=document.getElementById('drawer-bg');
+  const opening=!el.classList.contains('open');
+  // Close the other panel first
+  other.classList.remove('open');
   el.classList.toggle('open');
-  setTimeout(resizeC,230);
+  if(isMobile()){
+    bg.classList.toggle('on', opening);
+    // Show/hide mobile stats strip
+    const ms=document.getElementById('mob-stats');
+    if(ms) ms.style.display=opening?'none':'';
+  } else {
+    setTimeout(resizeC,230);
+  }
+}
+
+function closeAllDrawers(){
+  document.getElementById('lpanel').classList.remove('open');
+  document.getElementById('rpanel').classList.remove('open');
+  document.getElementById('drawer-bg').classList.remove('on');
+  const ms=document.getElementById('mob-stats');
+  if(ms&&isMobile()) ms.style.display='';
 }
 
 // ═══════════════════════════════════════════════
@@ -2622,6 +2809,13 @@ function updateUI(){
   document.getElementById('bgcnt').textContent=G.bag.length;
   document.getElementById('sdcnt').textContent=G.sold;
   document.getElementById('tcaught').textContent=G.caught;
+  // Mobile stats strip
+  const mg=document.getElementById('mob-gold');
+  const mc=document.getElementById('mob-caught');
+  const mb=document.getElementById('mob-biome');
+  if(mg) mg.textContent=G.gold;
+  if(mc) mc.textContent=G.caught;
+  if(mb) mb.textContent=BIOMES.find(b=>b.id===G.biome)?.name.split(' ')[0]||G.biome;
   updateRodCard();
   const activeTab=document.querySelector('.nb.act');
   if(activeTab){
@@ -3162,8 +3356,26 @@ window.addEventListener('load',()=>{
     document.getElementById('gc').style.cursor='default';
   });
 
-  // Boot message in console log (pre-populated for when user opens it)
-  clog('Corner Pond Console ready. Press ` to toggle.','sys');
+  // Mobile setup
+  if(isMobile()){
+    const ms=document.getElementById('mob-stats');
+    if(ms) ms.style.display='flex';
+    // Touch handler for SVG reel button (fires alongside click but more responsive)
+    document.getElementById('rbtn').addEventListener('touchstart',(e)=>{
+      e.preventDefault();
+      pressReel();
+    },{passive:false});
+    // Swipe down to close drawer
+    let swipeStartY=0;
+    ['lpanel','rpanel'].forEach(id=>{
+      const el=document.getElementById(id);
+      el.addEventListener('touchstart',(e)=>{swipeStartY=e.touches[0].clientY;},{passive:true});
+      el.addEventListener('touchend',(e)=>{
+        const dy=e.changedTouches[0].clientY-swipeStartY;
+        if(dy>60) closeAllDrawers();
+      },{passive:true});
+    });
+  }
   clog('Tip: Click/tap the water to cast at that spot!','sys');
 
   // Auto-save on page hide (tab switch, close, etc.)
