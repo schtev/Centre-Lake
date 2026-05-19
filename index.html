@@ -118,9 +118,9 @@ body{font-family:'Nunito',system-ui,Helvetica,Arial,sans-serif;}
 }
 *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
 html,body{height:100%;overflow:hidden;touch-action:manipulation;}
-body{background:#1a1208;color:var(--tx);display:flex;flex-direction:column;padding-left:var(--safe-l);padding-right:var(--safe-r);}
+body{background:#1a1208;color:var(--tx);display:flex;flex-direction:column;}
 /* TOP BAR */
-#topbar{background:var(--wdd);color:#fdf0d0;padding:4px 10px;padding-top:max(4px,var(--safe-t));display:flex;align-items:center;gap:5px;border-bottom:2px solid #3a2008;flex-shrink:0;min-height:var(--tap);flex-wrap:nowrap;}
+#topbar{background:var(--wdd);color:#fdf0d0;padding:4px 10px;padding-top:max(4px,var(--safe-t));padding-left:max(10px,var(--safe-l));padding-right:max(10px,var(--safe-r));display:flex;align-items:center;gap:5px;border-bottom:2px solid #3a2008;flex-shrink:0;min-height:var(--tap);flex-wrap:nowrap;}
 .gtitle{font-family:'Lora',serif;font-size:15px;letter-spacing:.8px;white-space:nowrap;}
 #time-disp{font-size:11px;font-weight:700;padding:2px 6px;border-radius:8px;background:rgba(0,0,0,.35);color:#fdf0d0;white-space:nowrap;}
 #wx-disp{font-size:11px;padding:2px 6px;border-radius:8px;background:rgba(0,0,0,.35);color:#fdf0d0;white-space:nowrap;}
@@ -133,7 +133,11 @@ body{background:#1a1208;color:var(--tx);display:flex;flex-direction:column;paddi
 #fs-btn,#mute-btn{padding:5px 8px;min-height:var(--tap);background:rgba(255,255,255,.15);color:#fdf0d0;border:1.5px solid rgba(255,255,255,.2);border-radius:6px;cursor:pointer;font-size:14px;}
 #fs-btn:hover,#mute-btn:hover,#console-btn:hover{background:rgba(255,255,255,.28);}
 /* LAYOUT */
-#wrap{display:flex;flex:1;overflow:hidden;min-height:0;position:relative;}
+#wrap{display:flex;flex:1;overflow:hidden;min-height:0;position:relative;
+  background:#3a5a20;  /* matches pond surround — no dark bleed */
+  margin-left:0;margin-right:0;
+  /* Extend canvas content into safe area insets */
+  padding-left:var(--safe-l);padding-right:var(--safe-r);}
 /* SIDE PANELS — hidden by default, shown when .open */
 #lpanel,#rpanel{background:var(--pb);flex-direction:column;overflow:hidden;flex-shrink:0;display:none;}
 #lpanel.open{display:flex;width:215px;min-width:215px;border-right:2px solid var(--pbr);animation:slideInLeft .2s ease;}
@@ -141,8 +145,10 @@ body{background:#1a1208;color:var(--tx);display:flex;flex-direction:column;paddi
 @keyframes slideInLeft{from{width:0;min-width:0;opacity:0;}to{width:215px;min-width:215px;opacity:1;}}
 @keyframes slideInRight{from{width:0;min-width:0;opacity:0;}to{width:190px;min-width:190px;opacity:1;}}
 #lpanel.open>*,#rpanel.open>*{display:flex !important;}
-/* Game canvas fills all remaining space */
-#gc{flex:1;position:relative;overflow:hidden;min-width:0;min-height:0;}
+/* Game canvas fills all remaining space, bleeds into safe area insets */
+#gc{flex:1;position:relative;overflow:hidden;min-width:0;min-height:0;
+  margin-left:calc(-1 * var(--safe-l));
+  margin-right:calc(-1 * var(--safe-r));}
 /* BOTTOM SHEETS */
 .sheet{display:none;position:fixed;left:0;right:0;bottom:0;z-index:35;background:var(--pb);border-radius:18px 18px 0 0;border-top:2px solid var(--wd);max-height:76vh;flex-direction:column;overflow:hidden;box-shadow:0 -4px 30px rgba(0,0,0,.55);padding-bottom:var(--safe-b);transform:translateY(100%);transition:transform .26s cubic-bezier(.32,.72,0,1);}
 .sheet.open{display:flex;transform:translateY(0);}
@@ -929,401 +935,522 @@ const COMMANDS={
 // ═══════════════════════════════════════════════
 const OC = (function(){
 
-  // ── state ────────────────────────────────────
+  // ── state ─────────────────────────────────────
   let active=false, raf=null;
   let cv=null, ctx=null;
   let W=0, H=0;
 
   // World / Camera
-  const SHORE_X=80;           // world X of shore
-  const WORLD_MAX=6000;       // max world X
-  let camX=0;                 // world X at left edge of viewport
+  const SHORE_X=80;
+  const WORLD_MAX=8000;
+  let camX=0;
   let zoom=1.0;
-  const MIN_ZOOM=0.45, MAX_ZOOM=2.2;
-  function wToC(wx){ return (wx-camX)*zoom; }  // world X → canvas X
+  const MIN_ZOOM=0.3, MAX_ZOOM=2.5;
+  function wToC(wx){ return (wx-camX)*zoom; }
+  function cToW(cx){ return cx/zoom+camX; }
 
-  // Boat (world space X)
-  let bWorldX=150,
-      bVx=0,
-      bFacing=1,    // 1=right, -1=left
-      bW=88, bH=30;
-  const BOAT_ACCEL=0.38, BOAT_FRICTION=0.82, BOAT_MAX_V=4;
+  // Boat tiers — each unlocked by buying in shop
+  const BOATS=[
+    {id:'rowboat',  name:'Rowboat',        maxX:1200,  accel:0.28,maxV:3,  w:72, h:26,sail:'#e8e0d0',hull:'#8b5e3c', castMult:1.0, price:0,   desc:'Basic wooden rowboat'},
+    {id:'dinghy',   name:'Fishing Dinghy', maxX:2200,  accel:0.35,maxV:3.8,w:82, h:28,sail:'#d0e8d0',hull:'#4a7a3c', castMult:1.2, price:2000, desc:'A sturdier green dinghy'},
+    {id:'trawler',  name:'Trawler',        maxX:4000,  accel:0.42,maxV:4.5,w:100,h:32,sail:'#e0d0b8',hull:'#7a5030', castMult:1.5, price:6000, desc:'A proper fishing trawler'},
+    {id:'schooner', name:'Schooner',        maxX:6000,  accel:0.50,maxV:5.5,w:120,h:36,sail:'#f0f0f0',hull:'#3a3a5c', castMult:1.8, price:16000,desc:'Two-masted ocean-going schooner'},
+    {id:'galleon',  name:'Galleon',        maxX:WORLD_MAX,accel:0.60,maxV:6.5,w:148,h:44,sail:'#c8b860',hull:'#4a2810', castMult:2.2, price:40000,desc:'A legendary deep-ocean galleon'},
+  ];
+  let currentBoat=0; // index into BOATS
+  function getBoat(){ return BOATS[Math.min(currentBoat,BOATS.length-1)]; }
 
-  // Rod-based max world X and cast distance
-  function getBoatMaxX(){ const m={twig:900,wooden:1100,bamboo:1800,storm:2200,crystal:2800,abyss:3600,frostbite:3200,tides:4600,celestial:WORLD_MAX}; return m[G.rod]||900; }
-  function getRodCastDist(){ const d={twig:80,wooden:110,bamboo:150,storm:170,crystal:200,abyss:250,frostbite:220,tides:290,celestial:360}; return d[G.rod]||110; }
+  // Boat position/physics
+  let bWorldX=150, bVx=0, bFacing=1;
+  const BOAT_FRICTION=0.82;
 
-  // Hook (worldX, canvasY)
+  // Depth zones — 8 zones based on world distance fraction
+  const ZONES=[
+    {id:'beach',    name:'Beach Shallows',  colTop:'#70c0e8',colBot:'#50a0c8',depth:8,   dist:0.00},
+    {id:'shallow',  name:'Shallow Waters',  colTop:'#5aade0',colBot:'#3a8dc0',depth:25,  dist:0.05},
+    {id:'coastal',  name:'Coastal Waters',  colTop:'#4090c0',colBot:'#2870a0',depth:60,  dist:0.14},
+    {id:'open',     name:'Open Ocean',      colTop:'#306898',colBot:'#204878',depth:180, dist:0.28},
+    {id:'offshore', name:'Offshore Waters', colTop:'#20487a',colBot:'#143060',depth:400, dist:0.45},
+    {id:'deep',     name:'Deep Ocean',      colTop:'#142850',colBot:'#0c1c38',depth:900, dist:0.60},
+    {id:'abyss',    name:'The Abyss',       colTop:'#0a1428',colBot:'#060e1c',depth:2500,dist:0.78},
+    {id:'trench',   name:'The Trench',      colTop:'#050a14',colBot:'#020508',depth:8000,dist:0.92},
+  ];
+  function getZone(){
+    const frac=Math.max(0,(bWorldX-SHORE_X)/(WORLD_MAX-SHORE_X));
+    for(let i=ZONES.length-1;i>=0;i--){ if(frac>=ZONES[i].dist) return ZONES[i]; }
+    return ZONES[0];
+  }
+  function getZoneForDepth(depthFrac){
+    // Which zone applies at this depth fraction of the water column
+    // Combined with boat distance
+    const distFrac=Math.max(0,(bWorldX-SHORE_X)/(WORLD_MAX-SHORE_X));
+    const combined=(distFrac*0.6+depthFrac*0.4);
+    for(let i=ZONES.length-1;i>=0;i--){ if(combined>=ZONES[i].dist*0.6) return ZONES[i]; }
+    return ZONES[0];
+  }
+
+  function getDistM(){ return Math.round(Math.max(0,(bWorldX-SHORE_X)/4)); }
+  function getDepthM(){ return hookLanded?Math.round(hookDepthPx/(H*0.68)*getZone().depth):0; }
+
+  // ── Bait (replaces "hook") ──────────────────────────────
+  // The bait is actively player-controlled horizontally while sinking
   let hWorldX=0, hCanvasY=0;
-  let hVxWorld=0;             // horizontal world velocity (for drift)
-  let hookActive=false;
-  let hookLanded=false;       // true once hook hits water surface
-  let hookArcT=0;             // 0→1 arc animation progress
-  let hookArcDuration=60;     // frames for arc
-  let hookArcStartX=0, hookArcEndX=0; // world X start/end
-  let hookDepthPx=0;          // px below waterline when sinking
-  const HOOK_MAX_DRIFT=2.0, HOOK_FRICTION=0.78;
+  let hVxWorld=0;
+  let hookActive=false, hookLanded=false;
+  let hookArcT=0, hookArcDuration=60;
+  let hookArcStartX=0, hookArcEndX=0;
+  let hookDepthPx=0;
+  const HOOK_MAX_DRIFT=3.5, HOOK_FRICTION=0.80;
   let hookLeft=false, hookRight=false;
+  // Bait glows when fishing
+  let baitGlow=0;
 
   // Charge cast
-  let chargeTimer=0;          // 0→1
-  let charging=false;
-  let chargeRAF=null;
+  let chargeTimer=0, charging=false, chargeRAF=null;
+  function getRodCastDist(){
+    const d={twig:90,wooden:130,bamboo:175,storm:200,crystal:240,abyss:290,frostbite:255,tides:330,celestial:420};
+    return (d[G.rod]||110)*getBoat().castMult;
+  }
 
-  // Ocean bag (fish caught at sea — only unloaded at shore)
+  // Ocean hold (unloaded at shore)
   let oceanBag=[];
 
   // Keys
-  let keys={left:false, right:false};
+  let keys={left:false,right:false};
 
-  // Fish sprites data — drawn via canvas 2D, no images needed
-  // Each entry: id (matches FISH), col (body), fin, eye, shape, modifier overrides
+  // ── Live fish ──────────────────────────────────
+  // Each fish: worldX, depthFrac, vx, vy, size, sp, typeId, alpha, wobble,
+  //            state: 'wander'|'approach'|'attack'|'flee'|'hooked'
+  //            id (FISH id for catching), mod
+  let liveFish=[];
+
+  // Fish sprite definitions — shape + colours
   const SPRITES={
-    // common
     rshiner:   {body:'#a8d8f0',fin:'#88b8d8',eye:'#fff',shape:'slim'},
     swsardine: {body:'#c0d8b8',fin:'#90b888',eye:'#fff',shape:'slim'},
     saltgoby:  {body:'#d8b878',fin:'#b89858',eye:'#fff',shape:'round'},
-    // uncommon
+    pebbleback:{body:'#b8b0a0',fin:'#908878',eye:'#fff',shape:'slim'},
+    mudcrawler:{body:'#806858',fin:'#604838',eye:'#e0c060',shape:'round'},
+    cfperch:   {body:'#e09040',fin:'#c07020',eye:'#fff',shape:'round'},
     swampray:  {body:'#606050',fin:'#404030',eye:'#f0e060',shape:'ray'},
     dreel:     {body:'#405030',fin:'#304020',eye:'#a0f060',shape:'eel'},
-    // rare
+    mbsucker:  {body:'#606850',fin:'#404830',eye:'#fff',shape:'round'},
     bljelly:   {body:'#4080f0',fin:'#2040a0',eye:'#a0d0ff',shape:'jelly'},
     deepcoral: {body:'#f08040',fin:'#c05020',eye:'#fff',shape:'round'},
     voideel:   {body:'#181828',fin:'#302840',eye:'#8060c0',shape:'eel'},
     tiderunner:{body:'#408060',fin:'#205040',eye:'#fff',shape:'slim'},
-    grtout:    {body:'#d0d8e0',fin:'#a0b0c0',eye:'#fff',shape:'round'},
-    // epic
+    ashtrout:  {body:'#d0d8e0',fin:'#a0b0c0',eye:'#fff',shape:'round'},
+    grtout:    {body:'#d8e0e8',fin:'#b0c0c8',eye:'#fff',shape:'slim'},
+    emberbass: {body:'#e88040',fin:'#c05020',eye:'#fff',shape:'round'},
+    ssbass:    {body:'#e8a040',fin:'#c08020',eye:'#fff',shape:'round'},
     abyssray:  {body:'#203050',fin:'#101830',eye:'#40c0ff',shape:'ray'},
     tbgrpuper: {body:'#805030',fin:'#603010',eye:'#fff',shape:'round'},
     ironjaw:   {body:'#606870',fin:'#404850',eye:'#fff',shape:'round'},
     colossalcat:{body:'#706050',fin:'#504030',eye:'#e0b060',shape:'round'},
-    // legendary
+    ifpike:    {body:'#c8e0f0',fin:'#80b0d0',eye:'#a0e0ff',shape:'slim'},
+    prismbass: {body:'#d080f0',fin:'#9040d0',eye:'#fff',shape:'round'},
     crystalwhale:{body:'#c0e8ff',fin:'#80c0e8',eye:'#fff',shape:'whale'},
     tidalmanta:{body:'#304060',fin:'#203040',eye:'#60d0ff',shape:'ray'},
     sfmarlin2: {body:'#f08020',fin:'#c06000',eye:'#fff',shape:'marlin'},
-    celestray: {body:'#303060',fin:'#202048',eye:'#a0d0ff',shape:'ray'},
     stmtuna:   {body:'#304858',fin:'#203040',eye:'#fff',shape:'slim'},
-    voidkraken:{body:'#181820',fin:'#101018',eye:'#c040ff',shape:'kraken'},
     nftuna:    {body:'#203848',fin:'#142838',eye:'#80d0ff',shape:'slim'},
-    // boss
+    celestray: {body:'#303060',fin:'#202048',eye:'#a0d0ff',shape:'ray'},
+    voidkraken:{body:'#181820',fin:'#101018',eye:'#c040ff',shape:'kraken'},
     tkraken:   {body:'#102030',fin:'#0a1020',eye:'#ff4040',shape:'kraken'},
     tleviathan:{body:'#0a1828',fin:'#060e18',eye:'#40ffff',shape:'whale'},
-    // modifier tints applied on top
+    acangler:  {body:'#1a1a2a',fin:'#0e0e1e',eye:'#f0c040',shape:'round'},
+    abyssray2: {body:'#101828',fin:'#080e18',eye:'#40c0ff',shape:'ray'},
+    labyss:    {body:'#080808',fin:'#040404',eye:'#ff00ff',shape:'kraken'},
   };
-  const MOD_TINT={
-    golden:'#f5c000', radioactive:'#40e020', albino:'#f0f0e8',
-    aurora:'#a060f0', ancient:'#907860', giant:null,
-  };
+  const MOD_TINT={golden:'#f5c000',radioactive:'#40e020',albino:'#f0f0e8',aurora:'#a060f0',ancient:'#907860',giant:null};
 
-  // Ambient fish (world-space, drawn as canvas shapes below waterline)
-  let ambientFish=[];
-  function spawnAmbient(){
-    ambientFish=[];
-    const types=[
-      {typeId:'rshiner', sp:{body:'#a8d8f0',fin:'#88b8d8',eye:'#fff',shape:'slim'}},
-      {typeId:'swsardine',sp:{body:'#c0d8b8',fin:'#90b888',eye:'#fff',shape:'slim'}},
-      {typeId:'saltgoby', sp:{body:'#d8b878',fin:'#b89858',eye:'#fff',shape:'round'}},
-      {typeId:'tiderunner',sp:{body:'#408060',fin:'#205040',eye:'#fff',shape:'slim'}},
-      {typeId:'deepcoral',sp:{body:'#f08040',fin:'#c05020',eye:'#fff',shape:'round'}},
-      {typeId:'bljelly',  sp:{body:'#4080f0',fin:'#2040a0',eye:'#a0d0ff',shape:'jelly'}},
-      {typeId:'ironjaw',  sp:{body:'#606870',fin:'#404850',eye:'#fff',shape:'round'}},
-      {typeId:'stmtuna',  sp:{body:'#304858',fin:'#203040',eye:'#fff',shape:'slim'}},
-      {typeId:'sfmarlin2',sp:{body:'#f08020',fin:'#c06000',eye:'#fff',shape:'marlin'}},
-      {typeId:'dreel',    sp:{body:'#405030',fin:'#304020',eye:'#a0f060',shape:'eel'}},
-    ];
-    const count=22;
-    for(let i=0;i<count;i++){
-      const t=types[Math.floor(Math.random()*types.length)];
-      ambientFish.push({
-        worldX: SHORE_X+100+Math.random()*(WORLD_MAX-SHORE_X-200),
-        depthFrac: 0.08+Math.random()*0.75, // fraction of water column depth
-        vx:(Math.random()<0.5?-1:1)*(0.4+Math.random()*1.2),
-        vy:0,
-        size:6+Math.random()*16,
-        sp:t.sp,
-        typeId:t.typeId,
-        alpha:0.16+Math.random()*0.28,
-        wobble:Math.random()*Math.PI*2,
-        attracted:false,
-      });
-    }
-  }
-
-  // Zones based on world distance from shore
-  function getZone(){
-    const frac=Math.max(0,(bWorldX-SHORE_X)/(WORLD_MAX-SHORE_X));
-    if(frac<0.10) return {id:'shallow',name:'Shallow Waters',col:'#60b0e0',depth:20};
-    if(frac<0.25) return {id:'coastal',name:'Coastal Waters',col:'#4090c0',depth:60};
-    if(frac<0.45) return {id:'open',name:'Open Ocean',col:'#3070a0',depth:150};
-    if(frac<0.68) return {id:'deep',name:'Deep Ocean',col:'#204878',depth:400};
-    return {id:'abyss',name:'The Abyss',col:'#0a1828',depth:1200};
-  }
-
-  function getDistM(){ return Math.round(Math.max(0,(bWorldX-SHORE_X)/3)); }
-  function getDepthM(){ return (hookActive&&hookLanded)?Math.round(hookDepthPx/(H*0.65)*getZone().depth):0; }
-
-  // ── fish catch pool for ocean mode ───────────
-  // Maps zone+depth to eligible FISH ids with weights
-  const OCEAN_FISH={
-    shallow:  [{id:'rshiner',w:60},{id:'swsardine',w:50},{id:'saltgoby',w:50},{id:'snapper',w:40},{id:'bass',w:30},{id:'perch',w:30},{id:'cfperch',w:20},{id:'tiderunner',w:15},{id:'tbgrpuper',w:8},{id:'emberbass',w:6}],
-    coastal:  [{id:'swsardine',w:40},{id:'tiderunner',w:30},{id:'deepcoral',w:20},{id:'bljelly',w:18},{id:'tbgrpuper',w:14},{id:'ironjaw',w:10},{id:'sfmarlin2',w:5},{id:'tmbarracuda',w:4},{id:'stmtuna',w:3},{id:'nftuna',w:2}],
-    open:     [{id:'tiderunner',w:30},{id:'stmtuna',w:20},{id:'sfmarlin2',w:16},{id:'nftuna',w:12},{id:'tmbarracuda',w:10},{id:'ironjaw',w:8},{id:'colossalcat',w:6},{id:'crystalwhale',w:3},{id:'tidalmanta',w:3},{id:'ptuna',w:1}],
-    deep:     [{id:'voideel',w:25},{id:'abyssray',w:18},{id:'colossalcat',w:14},{id:'acangler',w:10},{id:'celestray',w:6},{id:'tidalmanta',w:5},{id:'sfmarlin',w:4},{id:'voidkraken',w:2},{id:'tleviathan',w:1}],
-    abyss:    [{id:'voidkraken',w:20},{id:'tleviathan',w:12},{id:'labyss',w:8},{id:'acangler',w:10},{id:'celestray',w:8},{id:'abyssray',w:14},{id:'voideel',w:16}],
+  // Fish pool per zone — each entry has fishId and preferred depthFrac range
+  const ZONE_FISH={
+    beach:    [{id:'rshiner',w:60,dMin:0.0,dMax:0.3},{id:'swsardine',w:50,dMin:0.0,dMax:0.3},{id:'saltgoby',w:50,dMin:0.1,dMax:0.5},{id:'pebbleback',w:30,dMin:0.1,dMax:0.4},{id:'bass',w:20,dMin:0.1,dMax:0.5}],
+    shallow:  [{id:'rshiner',w:40,dMin:0.0,dMax:0.4},{id:'swsardine',w:35,dMin:0.0,dMax:0.4},{id:'saltgoby',w:35,dMin:0.1,dMax:0.5},{id:'cfperch',w:20,dMin:0.2,dMax:0.6},{id:'emberbass',w:12,dMin:0.2,dMax:0.5},{id:'snapper',w:10,dMin:0.2,dMax:0.6}],
+    coastal:  [{id:'swsardine',w:35,dMin:0.0,dMax:0.35},{id:'tiderunner',w:25,dMin:0.1,dMax:0.5},{id:'deepcoral',w:18,dMin:0.2,dMax:0.6},{id:'bljelly',w:15,dMin:0.3,dMax:0.7},{id:'tbgrpuper',w:12,dMin:0.3,dMax:0.65},{id:'ironjaw',w:8,dMin:0.4,dMax:0.75},{id:'sfmarlin2',w:4,dMin:0.1,dMax:0.4}],
+    open:     [{id:'tiderunner',w:25,dMin:0.05,dMax:0.45},{id:'stmtuna',w:20,dMin:0.1,dMax:0.5},{id:'sfmarlin2',w:14,dMin:0.05,dMax:0.35},{id:'nftuna',w:10,dMin:0.2,dMax:0.55},{id:'ironjaw',w:8,dMin:0.35,dMax:0.7},{id:'colossalcat',w:5,dMin:0.5,dMax:0.85},{id:'crystalwhale',w:2,dMin:0.1,dMax:0.4},{id:'tidalmanta',w:2,dMin:0.15,dMax:0.5}],
+    offshore: [{id:'stmtuna',w:18,dMin:0.1,dMax:0.5},{id:'nftuna',w:14,dMin:0.15,dMax:0.55},{id:'colossalcat',w:10,dMin:0.4,dMax:0.8},{id:'tidalmanta',w:8,dMin:0.1,dMax:0.5},{id:'ironjaw',w:7,dMin:0.4,dMax:0.8},{id:'voideel',w:6,dMin:0.6,dMax:0.9},{id:'abyssray',w:5,dMin:0.5,dMax:0.88},{id:'acangler',w:2,dMin:0.7,dMax:0.95}],
+    deep:     [{id:'voideel',w:22,dMin:0.55,dMax:0.9},{id:'abyssray',w:16,dMin:0.5,dMax:0.88},{id:'colossalcat',w:10,dMin:0.5,dMax:0.85},{id:'acangler',w:8,dMin:0.65,dMax:0.95},{id:'celestray',w:5,dMin:0.6,dMax:0.92},{id:'tidalmanta',w:4,dMin:0.4,dMax:0.75},{id:'voidkraken',w:2,dMin:0.75,dMax:0.97},{id:'tleviathan',w:1,dMin:0.6,dMax:0.9}],
+    abyss:    [{id:'voideel',w:14,dMin:0.7,dMax:0.97},{id:'acangler',w:12,dMin:0.72,dMax:0.97},{id:'abyssray',w:10,dMin:0.65,dMax:0.95},{id:'celestray',w:6,dMin:0.68,dMax:0.96},{id:'voidkraken',w:14,dMin:0.75,dMax:0.98},{id:'tleviathan',w:8,dMin:0.70,dMax:0.97},{id:'labyss',w:4,dMin:0.82,dMax:0.99}],
+    trench:   [{id:'voidkraken',w:18,dMin:0.80,dMax:0.99},{id:'tleviathan',w:14,dMin:0.78,dMax:0.99},{id:'labyss',w:10,dMin:0.85,dMax:1.0},{id:'acangler',w:8,dMin:0.80,dMax:0.98},{id:'abyssray',w:6,dMin:0.82,dMax:0.99},{id:'celestray',w:4,dMin:0.78,dMax:0.97}],
   };
 
-  // Fish on hook (when hooked)
+  // Hooked fish state
   let hookedFish=null, hookedMod=null;
-  let hookFlash=0; // animation timer when fish bites
-  let hookBobble=0; // fish struggle animation
+  let hookFlash=0, hookBobble=0;
+  let hookedAmbientIdx=-1; // which liveFish is hooked
 
-  // Particles for splash
+  // Particles
   let particles=[];
 
-  // ── main draw loop ────────────────────────────
+  // ── Zone-specific visual elements (world-space) ──────────
+  let zoneDeco=[]; // {type,worldX,y,col,size,phase}
+  function spawnZoneDeco(){
+    zoneDeco=[];
+    // Coral reef near shore
+    for(let i=0;i<18;i++) zoneDeco.push({type:'coral',worldX:SHORE_X+60+Math.random()*400,y:0.75+Math.random()*0.2,col:['#e04060','#f06040','#e08020','#c04080'][Math.floor(Math.random()*4)],size:8+Math.random()*18,phase:Math.random()*Math.PI*2});
+    // Kelp forest in coastal zone
+    for(let i=0;i<24;i++) zoneDeco.push({type:'kelp', worldX:SHORE_X+500+Math.random()*800, y:0.4+Math.random()*0.5, col:'#305820',size:12+Math.random()*22,phase:Math.random()*Math.PI*2});
+    // Bioluminescent plankton in open ocean
+    for(let i=0;i<30;i++) zoneDeco.push({type:'plankton',worldX:SHORE_X+1600+Math.random()*2200,y:0.2+Math.random()*0.7,col:['#4080ff','#40c0ff','#80ffc0'][Math.floor(Math.random()*3)],size:3+Math.random()*6,phase:Math.random()*Math.PI*2});
+    // Thermal vents in deep/abyss
+    for(let i=0;i<8;i++) zoneDeco.push({type:'vent', worldX:SHORE_X+3200+Math.random()*3000,y:0.88+Math.random()*0.08,col:'#ff6020',size:18+Math.random()*30,phase:Math.random()*Math.PI*2});
+    // Sunken wreck
+    zoneDeco.push({type:'wreck',worldX:SHORE_X+1800+Math.random()*600,y:0.78,col:'#604030',size:60,phase:0});
+    // Rock formations
+    for(let i=0;i<12;i++) zoneDeco.push({type:'rock', worldX:SHORE_X+200+Math.random()*5000,y:0.82+Math.random()*0.15,col:'#5a5048',size:14+Math.random()*40,phase:Math.random()*Math.PI*2});
+    // Abyss crystals
+    for(let i=0;i<10;i++) zoneDeco.push({type:'crystal_deco',worldX:SHORE_X+5000+Math.random()*2500,y:0.75+Math.random()*0.2,col:['#6040c0','#4060e0','#8020a0'][Math.floor(Math.random()*3)],size:15+Math.random()*30,phase:Math.random()*Math.PI*2});
+  }
+
+  // ── Spawn live fish ──────────────────────────
+  function spawnLiveFish(){
+    liveFish=[];
+    const allTypes=Object.values(ZONE_FISH).flat();
+    // Get unique fish IDs with their zones
+    const used=new Set();
+    ZONES.forEach(zone=>{
+      const pool=ZONE_FISH[zone.id]||[];
+      pool.forEach(entry=>{
+        if(used.has(entry.id)) return;
+        used.add(entry.id);
+        const fishDef=FISH.find(f=>f.id===entry.id);
+        if(!fishDef) return;
+        const sp=SPRITES[entry.id]||{body:'#5090a0',fin:'#305870',eye:'#fff',shape:'round'};
+        // Spawn 1-3 of each type spread across the world
+        const count=Math.ceil(Math.random()*2+0.5);
+        for(let i=0;i<count;i++){
+          const worldSpan=(WORLD_MAX-SHORE_X);
+          const zStart=SHORE_X+zone.dist*worldSpan*0.8;
+          const zEnd=SHORE_X+Math.min(1,(zone.dist+0.15))*worldSpan;
+          liveFish.push({
+            worldX: zStart+Math.random()*(zEnd-zStart),
+            depthFrac: entry.dMin+Math.random()*(entry.dMax-entry.dMin),
+            vx: (Math.random()<0.5?-1:1)*(0.3+Math.random()*1.0),
+            vy: 0,
+            size: 10+fishDef.mx*0.12,
+            sp, fishId:entry.id, fishDef,
+            alpha: 0.5+Math.random()*0.45,
+            wobble: Math.random()*Math.PI*2,
+            facing: 1,
+            state:'wander',  // wander | approach | attack | flee
+            stateTimer:0,
+            targetX:0, targetY:0,  // approach/attack target (canvas Y for depth)
+            mod: Math.random()<0.08?rollModifier():null,
+          });
+        }
+      });
+    });
+  }
+
+  // ── Tick ──────────────────────────────────────
   function tick(){
-    if(!active){return;}
+    if(!active) return;
     raf=requestAnimationFrame(tick);
     W=cv.width; H=cv.height;
     update();
     draw();
   }
 
+  const wY=()=>H*0.30;   // waterline canvas Y
+  const waterH=()=>H-wY();
+
   function update(){
-    // Boat movement (world space)
-    if(keys.left)  bVx-=BOAT_ACCEL;
-    if(keys.right) bVx+=BOAT_ACCEL;
+    const bt=getBoat();
+    if(keys.left)  bVx-=bt.accel;
+    if(keys.right) bVx+=bt.accel;
     bVx*=BOAT_FRICTION;
-    bVx=Math.max(-BOAT_MAX_V,Math.min(BOAT_MAX_V,bVx));
+    bVx=Math.max(-bt.maxV,Math.min(bt.maxV,bVx));
     if(bVx>0.3) bFacing=1;
     if(bVx<-0.3) bFacing=-1;
     bWorldX+=bVx;
-    bWorldX=Math.max(SHORE_X+10,Math.min(getBoatMaxX(),bWorldX));
+    bWorldX=Math.max(SHORE_X+10,Math.min(bt.maxX,bWorldX));
 
-    // Camera: keep boat at ~40% from left edge
+    // Camera locked to boat/bait
     const viewW=W/zoom;
-    camX=Math.max(0,Math.min(WORLD_MAX-viewW, bWorldX-viewW*0.4));
+    const focusX=hookActive&&hookLanded ? hWorldX : bWorldX;
+    camX=Math.max(0,Math.min(WORLD_MAX-viewW, focusX-viewW*0.4));
 
-    // Hook arc animation
+    // Hook arc
     if(hookActive&&!hookLanded){
       hookArcT+=1/hookArcDuration;
       if(hookArcT>=1){
         hookArcT=1; hookLanded=true; hookDepthPx=0; hVxWorld=0;
-        hWorldX=hookArcEndX;
-        hCanvasY=H*0.30;
-        addSplash(wToC(hWorldX), hCanvasY, 10);
+        hWorldX=hookArcEndX; hCanvasY=wY()+2;
+        addSplash(wToC(hWorldX),hCanvasY,10);
         SFX.play('cast');
-        showOceanMsg('Hook in the water! Steer it with ◀ ▶', 2500);
+        showOceanMsg('Bait in water! Steer ◀ ▶ to guide it',2200);
       } else {
-        // Parabolic arc
         hWorldX=hookArcStartX+(hookArcEndX-hookArcStartX)*hookArcT;
-        const arcH=Math.sin(hookArcT*Math.PI)*80; // peak height
-        hCanvasY=H*0.30-arcH*(1-hookArcT*0.3);
+        const arc=Math.sin(hookArcT*Math.PI)*85;
+        hCanvasY=wY()-arc;
       }
     }
 
-    // Hook sinking
-    if(hookActive&&hookLanded){
-      hookDepthPx=Math.min(H*0.65, hookDepthPx+1.6);
-      hCanvasY=H*0.30+hookDepthPx;
-      // Drift
-      if(hookLeft)  hVxWorld-=0.06;
-      if(hookRight) hVxWorld+=0.06;
+    // Bait sinking + player horizontal control
+    if(hookActive&&hookLanded&&!hookedFish){
+      hookDepthPx=Math.min(H*0.68, hookDepthPx+1.4);
+      hCanvasY=wY()+hookDepthPx;
+      if(hookLeft)  hVxWorld-=0.12;
+      if(hookRight) hVxWorld+=0.12;
       hVxWorld*=HOOK_FRICTION;
       hVxWorld=Math.max(-HOOK_MAX_DRIFT,Math.min(HOOK_MAX_DRIFT,hVxWorld));
       hWorldX+=hVxWorld;
-      hWorldX=Math.max(SHORE_X,Math.min(WORLD_MAX,hWorldX));
-      // Try bite
-      if(!hookedFish&&hookDepthPx>H*0.06&&Math.random()<0.004) tryHookFish();
-      // Bottom — no catch
-      if(hookDepthPx>=H*0.65&&!hookedFish){
+      hWorldX=Math.max(SHORE_X+10,Math.min(WORLD_MAX-10,hWorldX));
+      baitGlow=Math.sin(Date.now()/300)*0.4+0.6;
+      // Bottom — miss
+      if(hookDepthPx>=H*0.68){
         hookActive=false; hookLanded=false;
         SFX.play('miss'); addSplash(wToC(hWorldX),hCanvasY);
         showOceanMsg('Nothing at this depth...',2000);
       }
     }
+    if(hookedFish&&hookFlash>0) hookFlash--;
+    if(hookedFish&&hookBobble>0) hookBobble--;
 
-    if(hookFlash>0) hookFlash--;
-    if(hookBobble>0) hookBobble--;
+    // ── Live fish AI ──────────────────────────────
+    const baitCX = wToC(hWorldX);
+    const baitCY = hCanvasY;
+    const WH=waterH();
 
-    // Ambient fish: move + attract to hook
-    const wY=H*0.30; // waterline canvas Y
-    const waterH=H*0.70; // water column height
-    ambientFish.forEach(f=>{
-      f.wobble+=0.05;
-      // Compute canvas Y from depthFrac
-      const cy=wY+f.depthFrac*waterH;
+    liveFish.forEach((f,i)=>{
+      if(f.state==='hooked') return; // hooked fish handled separately
+      f.wobble+=0.04;
+      f.stateTimer=Math.max(0,f.stateTimer-1);
+      const cx=wToC(f.worldX);
+      const cy=wY()+f.depthFrac*WH;
 
+      // Distance to bait
+      const dx=baitCX-cx, dy=baitCY-cy;
+      const distToBait=Math.sqrt(dx*dx+dy*dy);
+      const fishPixelSize=f.size*zoom;
+
+      // State machine
       if(hookActive&&hookLanded&&!hookedFish){
-        const cxF=wToC(f.worldX);
-        const dx=wToC(hWorldX)-cxF;
-        const dy=hCanvasY-cy;
-        const dist=Math.sqrt(dx*dx+dy*dy);
-        if(dist<220){
-          f.attracted=true;
-          f.vx+=dx/dist*0.18;
-          f.vy+=dy/dist*0.18;
-        } else { f.attracted=false; }
-      } else { f.attracted=false; }
-
-      if(!f.attracted){
-        f.vx+=(Math.random()-0.5)*0.06;
-        f.vy+=(Math.random()-0.5)*0.025;
-        f.vy*=0.94;
-        if(f.depthFrac<=0.01) f.vy=Math.abs(f.vy);
-        if(f.depthFrac>=0.98) f.vy=-Math.abs(f.vy);
-        f.vx=Math.max(-2,Math.min(2,f.vx));
+        if(f.state==='wander'&&distToBait<280){
+          f.state='approach'; f.stateTimer=180;
+        }
+        if(f.state==='approach'){
+          // Swim toward bait
+          const speed=1.6+fishPixelSize*0.02;
+          f.vx+=dx/distToBait*speed*0.08;
+          f.vy+=dy/distToBait*speed*0.06;
+          if(distToBait<fishPixelSize*1.1&&f.stateTimer>0){
+            // TOUCH! — hooked
+            f.state='hooked';
+            hookedAmbientIdx=i;
+            hookedFish=f.fishDef;
+            hookedMod=f.mod;
+            hookFlash=35; hookBobble=80;
+            SFX.play('bite');
+            showOceanMsg('🎣 '+f.fishDef.name+' took the bait! REEL!',0);
+            document.getElementById('ocean-hook-controls').style.display='flex';
+          }
+          if(f.stateTimer<=0){ f.state='wander'; }
+        }
       } else {
-        f.vx=Math.max(-3.5,Math.min(3.5,f.vx));
-        f.vy=Math.max(-3.5,Math.min(3.5,f.vy));
+        if(f.state==='approach') f.state='wander';
       }
 
-      if(f.vx>0.15) f.facing=1; else if(f.vx<-0.15) f.facing=-1;
+      if(f.state==='flee'){
+        // Swim away from bait fast
+        const fd=-dx/Math.max(1,distToBait), fy2=-dy/Math.max(1,distToBait);
+        f.vx+=fd*0.25; f.vy+=fy2*0.12;
+        if(f.stateTimer<=0) f.state='wander';
+      }
+
+      if(f.state==='wander'){
+        f.vx+=(Math.random()-0.5)*0.10;
+        f.vy+=(Math.random()-0.5)*0.04;
+        f.vy*=0.94;
+        if(f.depthFrac<=0.01) f.vy=Math.abs(f.vy)*0.5;
+        if(f.depthFrac>=0.97) f.vy=-Math.abs(f.vy)*0.5;
+        f.vx=Math.max(-1.8,Math.min(1.8,f.vx));
+      } else if(f.state==='approach'){
+        f.vx=Math.max(-4,Math.min(4,f.vx));
+        f.vy=Math.max(-3,Math.min(3,f.vy));
+      }
+      f.vx*=0.92; // natural drag
+      if(f.vx>0.1) f.facing=1; else if(f.vx<-0.1) f.facing=-1;
       f.worldX+=f.vx;
-      f.depthFrac=Math.max(0.01,Math.min(0.98,f.depthFrac+f.vy/waterH));
-      if(f.worldX>WORLD_MAX+200) f.worldX=SHORE_X;
-      if(f.worldX<SHORE_X-100) f.worldX=WORLD_MAX;
+      f.depthFrac=Math.max(0.01,Math.min(0.97,f.depthFrac+f.vy/WH));
+      // Wrap world edges
+      if(f.worldX>WORLD_MAX+200) f.worldX=SHORE_X+50;
+      if(f.worldX<SHORE_X-50) f.worldX=WORLD_MAX-50;
     });
 
     // Particles
-    particles=particles.filter(p=>{
-      p.x+=p.vx; p.y+=p.vy; p.vy+=0.1; p.life--;
-      return p.life>0;
-    });
+    particles=particles.filter(p=>{p.x+=p.vx;p.y+=p.vy;p.vy+=0.09;p.life--;return p.life>0;});
 
     // HUD
     document.getElementById('oc-dist').textContent=getDistM()+'m';
     document.getElementById('oc-depth').textContent=getDepthM()+'m';
     document.getElementById('oc-zone-lbl').textContent=getZone().name;
-    // Ocean bag count
     const bcEl=document.getElementById('oc-bag-cnt');
     if(bcEl) bcEl.textContent=oceanBag.length>0?'🐟×'+oceanBag.length:'';
-  }
-
-  function tryHookFish(){
-    const z=getZone();
-    const pool=OCEAN_FISH[z.id]||OCEAN_FISH.coastal;
-    const rod=RODS.find(r=>r.id===G.rod);
-    // Luck modifier
-    const lm=G.luckTimer>0?1.5:1;
-    // Filter to fish that exist in FISH array
-    const eligible=pool.filter(e=>FISH.find(f=>f.id===e.id));
-    if(!eligible.length) return;
-    const tot=eligible.reduce((s,e)=>s+e.w,0);
-    let rv=Math.random()*tot;
-    let picked=null;
-    for(const e of eligible){rv-=e.w;if(rv<=0){picked=FISH.find(f=>f.id===e.id);break;}}
-    if(!picked) picked=FISH.find(f=>f.id===eligible[0].id);
-    hookedFish=picked;
-    hookedMod=rollModifier();
-    hookFlash=30;
-    hookBobble=60;
-    SFX.play('bite');
-    showOceanMsg('🎣 Something took the hook! REEL IT IN!',0);
-    document.getElementById('ocean-hook-controls').style.display='flex';
   }
 
   function addSplash(cx,cy,count=8){
     for(let i=0;i<count;i++){
       const a=Math.random()*Math.PI*2;
       const s=1+Math.random()*3;
-      particles.push({x:cx,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2,life:20+Math.random()*20,col:'#a0d8ff'});
+      particles.push({x:cx,y:cy,vx:Math.cos(a)*s,vy:Math.sin(a)*s-2.5,life:18+Math.random()*22,col:'#a0d8ff'});
     }
   }
 
-  // ── draw ──────────────────────────────────────
+  // ── Draw ──────────────────────────────────────
   function draw(){
     ctx.clearRect(0,0,W,H);
     const z=getZone();
-    const wY=H*0.30; // waterline canvas Y (lowered slightly)
+    const WLine=wY(), WHeight=waterH();
+    const t=Date.now()/1000;
 
-    // Sky gradient
-    const sky=ctx.createLinearGradient(0,0,0,wY);
-    sky.addColorStop(0,'#0a1830');
-    sky.addColorStop(1,'#1a3060');
-    ctx.fillStyle=sky; ctx.fillRect(0,0,W,wY);
+    // ── SKY ──
+    const sky=ctx.createLinearGradient(0,0,0,WLine);
+    const period=getTimePeriod();
+    const isDay=['dawn','morning','noon','afternoon'].includes(period);
+    if(isDay){
+      sky.addColorStop(0,'#1a4a90'); sky.addColorStop(0.6,'#3a80c0'); sky.addColorStop(1,'#80b8e0');
+    } else {
+      sky.addColorStop(0,'#04081a'); sky.addColorStop(1,'#0e1e3a');
+    }
+    ctx.fillStyle=sky; ctx.fillRect(0,0,W,WLine);
 
-    // Stars
-    ctx.fillStyle='rgba(255,255,255,0.5)';
-    for(let i=0;i<40;i++){
-      const sx=((i*137+13)%W), sy=((i*97+7)%(wY*0.85));
-      ctx.beginPath();ctx.arc(sx,sy,i%3===0?1.2:0.7,0,Math.PI*2);ctx.fill();
+    // Stars (night)
+    if(!isDay){
+      for(let i=0;i<60;i++){
+        const sx=((i*137+13)%W), sy=((i*97+7)%(WLine*0.9));
+        const tw=(Math.sin(t*1.5+i)*0.5+0.5)*0.7+0.2;
+        ctx.globalAlpha=tw;
+        ctx.fillStyle='#fff';
+        ctx.beginPath();ctx.arc(sx,sy,i%4===0?1.4:0.7,0,Math.PI*2);ctx.fill();
+      }
+      ctx.globalAlpha=1;
     }
 
     // Sun/moon
-    const period=getTimePeriod();
-    if(['dawn','morning','noon','afternoon'].includes(period)){
-      const sg=ctx.createRadialGradient(W*0.15,H*0.1,2,W*0.15,H*0.1,40);
-      sg.addColorStop(0,'rgba(255,220,80,0.8)'); sg.addColorStop(1,'rgba(255,180,40,0)');
-      ctx.fillStyle=sg; ctx.fillRect(0,0,W*0.35,wY);
-      ctx.fillStyle='#ffe060'; ctx.beginPath(); ctx.arc(W*0.15,H*0.1,14,0,Math.PI*2); ctx.fill();
+    if(isDay){
+      const sunX=W*(period==='morning'?0.18:period==='noon'?0.5:0.78), sunY=WLine*(period==='noon'?0.15:0.35);
+      const sg=ctx.createRadialGradient(sunX,sunY,2,sunX,sunY,50);
+      sg.addColorStop(0,'rgba(255,230,100,0.95)');sg.addColorStop(0.4,'rgba(255,200,60,0.6)');sg.addColorStop(1,'rgba(255,160,0,0)');
+      ctx.fillStyle=sg;ctx.fillRect(0,0,W,WLine);
+      ctx.fillStyle='#ffe860';ctx.beginPath();ctx.arc(sunX,sunY,15,0,Math.PI*2);ctx.fill();
+      // Sun shimmer on water
+      const shimX=sunX, shimW=40+Math.sin(t*2)*15;
+      ctx.fillStyle=`rgba(255,230,100,${0.08+Math.sin(t*3)*0.03})`;
+      ctx.beginPath();ctx.ellipse(shimX,WLine-2,shimW,4,0,0,Math.PI*2);ctx.fill();
     } else {
-      ctx.fillStyle='rgba(220,230,255,0.9)'; ctx.beginPath(); ctx.arc(W*0.15,H*0.08,10,0,Math.PI*2); ctx.fill();
+      const mx=W*0.22,my=WLine*0.25;
+      ctx.fillStyle='rgba(210,220,255,0.9)';ctx.beginPath();ctx.arc(mx,my,11,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='rgba(180,200,255,0.15)';ctx.beginPath();ctx.arc(mx,my,28,0,Math.PI*2);ctx.fill();
+      // Moon reflection
+      ctx.fillStyle=`rgba(210,220,255,${0.05+Math.sin(t*2)*0.02})`;
+      ctx.beginPath();ctx.ellipse(wToC(bWorldX-80),WLine-2,20,3,0,0,Math.PI*2);ctx.fill();
     }
 
-    // Shore
-    const shCX=wToC(SHORE_X);
-    const shoreGrad=ctx.createLinearGradient(0,0,shCX+50,0);
-    shoreGrad.addColorStop(0,'#8a7050');
-    shoreGrad.addColorStop(0.65,'#9a8060');
-    shoreGrad.addColorStop(1,'rgba(154,128,96,0)');
-    ctx.fillStyle=shoreGrad;
-    ctx.fillRect(0,H*0.18,Math.max(0,shCX+50),H*0.82);
-    // Shore label when near / catch to sell
-    if(shCX>-20&&shCX<W*0.6){
-      drawPalmTree(ctx,shCX-18,H*0.24);
-      if(oceanBag.length>0){
-        ctx.save();
-        ctx.fillStyle='rgba(212,170,58,0.95)';
-        ctx.font='bold 11px Nunito,sans-serif';
-        ctx.textAlign='center';
-        ctx.fillText('💰 Return here to sell ('+oceanBag.length+' fish)',shCX+10,H*0.20);
-        ctx.restore();
+    // Clouds (day only)
+    if(isDay){
+      for(let c=0;c<5;c++){
+        const cx2=((c*W/5+t*18+c*120)%W);
+        const cy2=WLine*(0.2+c*0.12);
+        ctx.fillStyle='rgba(255,255,255,0.22)';
+        ctx.beginPath();ctx.ellipse(cx2,cy2,40+c*12,14+c*4,0,0,Math.PI*2);ctx.fill();
+        ctx.beginPath();ctx.ellipse(cx2+20,cy2-6,24+c*6,12,0,0,Math.PI*2);ctx.fill();
       }
     }
 
-    // Ocean water
-    const waterGrad=ctx.createLinearGradient(0,wY,0,H);
-    waterGrad.addColorStop(0,z.col);
-    waterGrad.addColorStop(0.5,darken(z.col,0.5));
-    waterGrad.addColorStop(1,darken(z.col,0.3));
-    ctx.fillStyle=waterGrad;
-    ctx.fillRect(0,wY,W,H-wY);
-
-    // Horizon shimmer
-    ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=1.5;
-    ctx.beginPath();ctx.moveTo(0,wY);ctx.lineTo(W,wY);ctx.stroke();
-
-    // Wave lines
-    drawWaves(wY);
-
-    // Depth bands
-    for(let d=0;d<5;d++){
-      const dy=wY+d*(H-wY)/5;
-      ctx.fillStyle=`rgba(0,0,0,${0.03+d*0.025})`;
-      ctx.fillRect(0,dy,W,(H-wY)/5);
+    // ── SHORE ──
+    const shCX=wToC(SHORE_X);
+    if(shCX>-60&&shCX<W+60){
+      const shoreGrad=ctx.createLinearGradient(shCX-30,0,shCX+60,0);
+      shoreGrad.addColorStop(0,'#9a8060');
+      shoreGrad.addColorStop(0.7,'rgba(154,128,96,0.8)');
+      shoreGrad.addColorStop(1,'rgba(154,128,96,0)');
+      ctx.fillStyle=shoreGrad;
+      ctx.fillRect(0,H*0.2,Math.max(0,shCX+60),H*0.8);
+      drawPalmTree(ctx,shCX-18,H*0.24);
+      // Shore buildings
+      ctx.fillStyle='#8a7050';
+      ctx.fillRect(shCX-50,H*0.22,30,18); // shack
+      ctx.fillStyle='#7a5030';
+      ctx.fillRect(shCX-50,H*0.22-10,35,12); // roof
+      if(oceanBag.length>0){
+        ctx.save();ctx.fillStyle='rgba(212,170,58,0.95)';ctx.font='bold 11px Nunito,sans-serif';ctx.textAlign='center';
+        ctx.fillText('💰 Return to sell ('+oceanBag.length+')',shCX-10,H*0.19);ctx.restore();
+      }
     }
 
-    // ── Ambient fish (below water, canvas shapes) ──
-    const waterH=H-wY;
-    ambientFish.forEach(f=>{
+    // ── WATER background ──
+    // Water colour transitions based on position (not just zone)
+    // We draw a horizontal gradient strip
+    const waterGrad=ctx.createLinearGradient(0,WLine,0,H);
+    waterGrad.addColorStop(0,z.colTop);
+    waterGrad.addColorStop(0.45,z.colBot);
+    waterGrad.addColorStop(1,darken(z.colBot,0.4));
+    ctx.fillStyle=waterGrad;
+    ctx.fillRect(0,WLine,W,WHeight);
+
+    // Horizontal water colour change strip (left=shallow, right=deep)
+    // blend strip across entire canvas width to show gradient of ocean depth
+    const worldViewLeft=cToW(0), worldViewRight=cToW(W);
+    const stripeGrad=ctx.createLinearGradient(0,0,W,0);
+    ZONES.forEach((zone,i)=>{
+      const worldPos=SHORE_X+zone.dist*(WORLD_MAX-SHORE_X);
+      const frac=(worldPos-worldViewLeft)/(worldViewRight-worldViewLeft);
+      if(frac<0||frac>1) return;
+      stripeGrad.addColorStop(Math.max(0,Math.min(1,frac)),zone.colTop+'55');
+    });
+    ctx.fillStyle=stripeGrad;
+    ctx.fillRect(0,WLine,W,WHeight*0.5);
+
+    // Horizon shimmer
+    ctx.strokeStyle='rgba(255,255,255,0.15)';ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(0,WLine);ctx.lineTo(W,WLine);ctx.stroke();
+
+    // Depth bands
+    for(let d=0;d<8;d++){
+      const dy=WLine+d*(WHeight/8);
+      ctx.fillStyle=`rgba(0,0,0,${0.02+d*0.018})`;
+      ctx.fillRect(0,dy,W,WHeight/8);
+    }
+
+    // ── ZONE DECORATIONS ──
+    drawZoneDeco(t, WLine, WHeight);
+
+    // Waves
+    drawWaves(WLine,t);
+
+    // ── LIVE FISH ──
+    liveFish.forEach((f,i)=>{
       const cx=wToC(f.worldX);
-      if(cx<-60||cx>W+60) return;
-      const cy=wY+f.depthFrac*waterH;
-      if(cy<=wY+3) return;
-      // alpha dims with depth and with distance from camera viewport edge
-      const depthAlpha=f.alpha*(1-f.depthFrac*0.5);
-      const edgeFade=Math.min(1,Math.min(cx+60,W+60-cx)/60);
-      const finalAlpha=(f.attracted?Math.min(0.75,depthAlpha*2.8):depthAlpha)*edgeFade;
-      ctx.globalAlpha=Math.max(0,finalAlpha);
+      if(cx<-80||cx>W+80) return;
+      const cy=WLine+f.depthFrac*WHeight;
+      if(cy<=WLine+2) return;
+
+      // Depth-based visibility: shallow fish more visible, abyss fish nearly hidden
+      const depthAlpha=f.alpha*(1-f.depthFrac*0.45);
+      const edgeFade=Math.min(1,(Math.min(cx+80,W+80-cx))/80);
+      const stateAlpha=f.state==='approach'?Math.min(0.92,depthAlpha*2):depthAlpha;
+      const finalAlpha=stateAlpha*edgeFade;
+      if(finalAlpha<0.03) return;
+
+      ctx.globalAlpha=Math.min(0.92,finalAlpha);
       ctx.save();
       ctx.translate(cx,cy);
-      const fx=f.facing===-1?-1:1;
-      ctx.scale(fx,1);
-      // subtle body sway
-      const sway=Math.sin(f.wobble)*0.08*(f.attracted?1.5:1);
+      ctx.scale(f.facing,-1===f.facing?-1:1,1); // no — just use scale x for facing
+      ctx.scale(f.facing===1?1:-1,1);
+      const sway=Math.sin(f.wobble)*(f.state==='approach'?0.18:0.06);
       ctx.rotate(sway);
-      drawFishSprite(ctx,0,0,f.size,f.sp,null);
+      const drawSize=Math.max(7,f.size*Math.min(1.5,zoom));
+      drawFishSprite(ctx,0,0,drawSize,f.sp,f.state==='hooked'?f.mod:null);
+
+      // Approach indicator — small glow around approaching fish
+      if(f.state==='approach'){
+        ctx.globalAlpha=0.3+Math.sin(t*6)*0.2;
+        ctx.strokeStyle='#f0e060';ctx.lineWidth=2;
+        ctx.beginPath();ctx.arc(0,0,drawSize*1.3,0,Math.PI*2);ctx.stroke();
+      }
       ctx.restore();
       ctx.globalAlpha=1;
     });
@@ -1336,162 +1463,281 @@ const OC = (function(){
     });
     ctx.globalAlpha=1;
 
-    // ── Fishing line + hook ──
+    // ── FISHING LINE + BAIT ──
     const boatCX=wToC(bWorldX);
     if(hookActive){
       const hCX=wToC(hWorldX);
+      const rodTipX=boatCX+(bFacing>0?getBoat().w*0.15:-getBoat().w*0.15);
+      const rodTipY=WLine-getBoat().h*0.15;
+
       // Line
-      ctx.strokeStyle='rgba(255,255,255,0.5)';ctx.lineWidth=1;
-      ctx.beginPath();
-      const rodTipX=boatCX+(bFacing>0?bW*0.15:-bW*0.15);
-      const rodTipY=wY-bH*0.2;
-      ctx.moveTo(rodTipX,rodTipY);
+      ctx.strokeStyle='rgba(220,210,180,0.6)';ctx.lineWidth=1.2;
+      ctx.beginPath();ctx.moveTo(rodTipX,rodTipY);
       if(!hookLanded){
         ctx.lineTo(hCX,hCanvasY);
       } else {
-        // Catenary-ish curve
         const mx=(rodTipX+hCX)/2;
-        const my=Math.max(rodTipY,Math.min(hCanvasY,(rodTipY+hCanvasY)/2+20));
-        ctx.quadraticCurveTo(mx,my+15,hCX,hCanvasY);
+        ctx.quadraticCurveTo(mx,Math.max(rodTipY,Math.min(hCanvasY,(rodTipY+hCanvasY)/2+16)),hCX,hCanvasY);
       }
       ctx.stroke();
-      // Hook
-      ctx.strokeStyle='#c8c8b0';ctx.lineWidth=2;
+
+      // Bait glow halo
+      if(hookLanded&&!hookedFish){
+        const glowA=baitGlow*0.35;
+        ctx.fillStyle=`rgba(255,230,100,${glowA})`;
+        ctx.beginPath();ctx.arc(hCX,hCanvasY,14,0,Math.PI*2);ctx.fill();
+        // Bait itself
+        ctx.fillStyle='#f0c040';
+        ctx.beginPath();ctx.arc(hCX,hCanvasY,4,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle='rgba(255,255,200,0.8)';
+        ctx.beginPath();ctx.arc(hCX-1,hCanvasY-1,1.5,0,Math.PI*2);ctx.fill();
+      }
+
+      // Hook metal
+      ctx.strokeStyle='#b8b898';ctx.lineWidth=2.2;
       ctx.beginPath();ctx.arc(hCX,hCanvasY+4,5,0.2,Math.PI+0.2);ctx.stroke();
-      // Hooked fish
+
+      // Hooked fish dragged by bait
       if(hookedFish){
-        const sp=SPRITES[hookedFish.id]||{body:'#60a0c0',fin:'#406080',eye:'#fff',shape:'round'};
-        const bobOff=hookBobble>0?Math.sin(hookBobble*0.3)*4:0;
+        const hf=liveFish[hookedAmbientIdx];
+        const sp=hf?hf.sp:(SPRITES[hookedFish.id]||{body:'#60a0c0',fin:'#406080',eye:'#fff',shape:'round'});
+        const bobY=hookBobble>0?Math.sin(hookBobble*0.35)*5:0;
         if(hookFlash>0){
-          ctx.save();ctx.globalAlpha=hookFlash/30;
-          ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(hCX,hCanvasY+bobOff,20,10,0,0,Math.PI*2);ctx.fill();
+          ctx.save();ctx.globalAlpha=hookFlash/35;
+          ctx.fillStyle='#fff';ctx.beginPath();ctx.ellipse(hCX,hCanvasY+bobY,22,11,0,0,Math.PI*2);ctx.fill();
           ctx.restore();
         }
-        drawFishSprite(ctx,hCX,hCanvasY+bobOff,22,sp,hookedMod);
+        drawFishSprite(ctx,hCX,hCanvasY+bobY,Math.max(14,f=>f,22),sp,hookedMod);
       }
     }
 
-    // ── Charge indicator above boat ──
+    // Charge bar above boat
     if(charging&&chargeTimer>0){
-      const barW=64,barH=8;
-      const bY=wY-bH-28;
-      ctx.fillStyle='rgba(0,0,0,0.55)';
+      const barW=68,barH=8,bY=WLine-getBoat().h-30;
+      ctx.fillStyle='rgba(0,0,0,0.5)';
       ctx.beginPath();ctx.roundRect(boatCX-barW/2,bY,barW,barH,3);ctx.fill();
-      const col=chargeTimer<0.5?'#60d070':chargeTimer<0.8?'#f0c040':'#e85040';
+      const col=chargeTimer<0.5?'#60d070':chargeTimer<0.82?'#f0c040':'#e85040';
       ctx.fillStyle=col;
       ctx.beginPath();ctx.roundRect(boatCX-barW/2,bY,barW*chargeTimer,barH,3);ctx.fill();
-      ctx.strokeStyle='rgba(255,255,255,0.35)';ctx.lineWidth=1;
+      ctx.strokeStyle='rgba(255,255,255,0.3)';ctx.lineWidth=1;
       ctx.beginPath();ctx.roundRect(boatCX-barW/2,bY,barW,barH,3);ctx.stroke();
-      // Dashed arc showing cast distance
       const castDist=getRodCastDist()*chargeTimer*zoom;
       const arrowEndX=boatCX+bFacing*castDist;
       ctx.strokeStyle=col;ctx.lineWidth=1.5;ctx.setLineDash([4,4]);
       ctx.beginPath();ctx.moveTo(boatCX,bY-4);ctx.lineTo(Math.max(20,Math.min(W-20,arrowEndX)),bY-4);ctx.stroke();
       ctx.setLineDash([]);
-      ctx.fillStyle=col;ctx.font='9px Nunito,sans-serif';ctx.textAlign='center';
+      ctx.fillStyle=col;ctx.font='bold 9px Nunito,sans-serif';ctx.textAlign='center';
       ctx.fillText('HOLD TO CHARGE',boatCX,bY-8);ctx.textAlign='left';
     }
 
     // Boat
-    drawBoat(boatCX,wY);
+    drawBoat(boatCX, WLine);
 
-    // Distance ruler at bottom
-    ctx.fillStyle='rgba(255,255,255,0.2)';
-    const ruleStartX=Math.max(0,wToC(SHORE_X));
-    ctx.fillRect(ruleStartX,H-18,W-ruleStartX,2);
-    ctx.fillStyle='rgba(255,255,255,0.5)';
+    // Distance ruler
+    ctx.fillStyle='rgba(255,255,255,0.18)';
+    const rStart=Math.max(0,wToC(SHORE_X));
+    ctx.fillRect(rStart,H-20,W-rStart,2);
+    ctx.fillStyle='rgba(255,255,255,0.45)';
     ctx.font='9px Nunito,sans-serif';ctx.textAlign='left';
-    for(let m=0;m<=3000;m+=50){
-      const rx=wToC(SHORE_X+m*3);
-      if(rx<ruleStartX||rx>W-20) continue;
-      ctx.fillText(m+'m',rx,H-4);
+    for(let m=0;m<=5000;m+=100){
+      const rx=wToC(SHORE_X+m*4);
+      if(rx<rStart||rx>W-20) continue;
+      ctx.fillText(m+'m',rx,H-5);
     }
-    ctx.textAlign='left';
 
     // Zoom indicator
-    if(Math.abs(zoom-1.0)>0.08){
-      ctx.fillStyle='rgba(255,255,255,0.3)';
-      ctx.font='9px Nunito,sans-serif';ctx.textAlign='right';
-      ctx.fillText('🔍 '+zoom.toFixed(1)+'×',W-8,H-4);ctx.textAlign='left';
+    if(Math.abs(zoom-1.0)>0.05){
+      ctx.fillStyle='rgba(255,255,255,0.28)';ctx.font='9px Nunito,sans-serif';ctx.textAlign='right';
+      ctx.fillText('🔍'+zoom.toFixed(1)+'×',W-6,H-5);ctx.textAlign='left';
     }
+
+    // Zone name watermark in water
+    ctx.globalAlpha=0.07;
+    ctx.fillStyle='#ffffff';ctx.font=`bold ${Math.min(60,W*0.08)}px Nunito,sans-serif`;ctx.textAlign='center';
+    ctx.fillText(z.name.toUpperCase(),W/2,WLine+WHeight*0.5);
+    ctx.globalAlpha=1;ctx.textAlign='left';
   }
 
-  function drawWaves(baseY){
-    const t=Date.now()/1400;
-    const camOff=camX*0.008; // parallax offset
+  function drawZoneDeco(t, WLine, WHeight){
+    zoneDeco.forEach(d=>{
+      const cx=wToC(d.worldX);
+      if(cx<-60||cx>W+60) return;
+      const cy=WLine+d.y*WHeight;
+      ctx.save();
+      if(d.type==='coral'){
+        // Branching coral
+        ctx.strokeStyle=d.col;ctx.lineWidth=d.size*0.18;ctx.lineCap='round';
+        ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+Math.cos(d.phase)*d.size*0.4,cy-d.size*0.7);ctx.stroke();
+        ctx.lineWidth=d.size*0.1;
+        ctx.beginPath();ctx.moveTo(cx+Math.cos(d.phase)*d.size*0.3,cy-d.size*0.45);
+        ctx.lineTo(cx+Math.cos(d.phase+1.2)*d.size*0.6,cy-d.size*0.9+Math.sin(t+d.phase)*2);ctx.stroke();
+        ctx.beginPath();ctx.moveTo(cx+Math.cos(d.phase)*d.size*0.2,cy-d.size*0.3);
+        ctx.lineTo(cx+Math.cos(d.phase-1.1)*d.size*0.5,cy-d.size*0.65);ctx.stroke();
+      } else if(d.type==='kelp'){
+        ctx.strokeStyle=d.col;ctx.lineWidth=d.size*0.12+2;ctx.lineCap='round';
+        const sway=Math.sin(t*0.8+d.phase)*12;
+        ctx.beginPath();
+        ctx.moveTo(cx,cy);
+        ctx.bezierCurveTo(cx+sway*0.3,cy-d.size*0.33,cx-sway*0.3,cy-d.size*0.66,cx+sway,cy-d.size);
+        ctx.stroke();
+        // Bulbs
+        for(let b=0;b<3;b++){
+          const by=cy-d.size*(0.3+b*0.3);
+          const bx=cx+sway*(b*0.33);
+          ctx.fillStyle=lighten(d.col,0.3);
+          ctx.beginPath();ctx.ellipse(bx,by,4,6,sway*0.02,0,Math.PI*2);ctx.fill();
+        }
+      } else if(d.type==='plankton'){
+        const glow=(Math.sin(t*2+d.phase)*0.5+0.5)*0.6+0.2;
+        ctx.globalAlpha=glow*0.7;
+        ctx.fillStyle=d.col;
+        ctx.beginPath();ctx.arc(cx+Math.sin(t+d.phase)*4,cy+Math.cos(t*0.7+d.phase)*3,d.size*0.5,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=glow*0.25;
+        ctx.beginPath();ctx.arc(cx,cy,d.size*1.2,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=1;
+      } else if(d.type==='vent'){
+        // Hydrothermal vent — glowing chimney
+        ctx.fillStyle='#3a3028';
+        ctx.beginPath();ctx.ellipse(cx,cy,d.size*0.35,d.size*0.25,0,0,Math.PI*2);ctx.fill();
+        ctx.fillRect(cx-d.size*0.15,cy-d.size*0.5,d.size*0.3,d.size*0.5);
+        // Smoke/heat
+        for(let v=0;v<3;v++){
+          const vp=(t*0.5+v*0.4)%1;
+          const vapAlpha=(1-vp)*0.35;
+          const vapY=cy-d.size*0.5-vp*d.size*0.9;
+          const vapX=cx+Math.sin(t*2+v*2+d.phase)*d.size*0.22;
+          ctx.globalAlpha=vapAlpha;
+          ctx.fillStyle=d.col;
+          ctx.beginPath();ctx.arc(vapX,vapY,d.size*0.25*(0.5+vp*0.5),0,Math.PI*2);ctx.fill();
+          ctx.globalAlpha=1;
+        }
+      } else if(d.type==='wreck'){
+        // Sunken ship hull
+        ctx.fillStyle='#4a3020';
+        ctx.beginPath();
+        ctx.moveTo(cx-d.size,cy);ctx.lineTo(cx+d.size,cy);ctx.lineTo(cx+d.size*0.8,cy-d.size*0.4);
+        ctx.lineTo(cx-d.size*0.8,cy-d.size*0.4);ctx.closePath();ctx.fill();
+        // Broken mast
+        ctx.strokeStyle='#3a2010';ctx.lineWidth=5;
+        ctx.beginPath();ctx.moveTo(cx-d.size*0.2,cy-d.size*0.4);
+        ctx.lineTo(cx-d.size*0.3,cy-d.size*1.1);ctx.stroke();
+        // Algae on wreck
+        ctx.fillStyle='#284018';ctx.globalAlpha=0.6;
+        ctx.beginPath();ctx.ellipse(cx+d.size*0.3,cy-d.size*0.2,16,8,0.5,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=1;
+        // Porthole
+        ctx.fillStyle='rgba(0,0,0,0.5)';
+        ctx.beginPath();ctx.arc(cx+d.size*0.4,cy-d.size*0.22,6,0,Math.PI*2);ctx.fill();
+      } else if(d.type==='rock'){
+        ctx.fillStyle=d.col;
+        ctx.beginPath();ctx.ellipse(cx,cy,d.size,d.size*0.5+4,d.phase*0.3,0,Math.PI*2);ctx.fill();
+        ctx.fillStyle=lighten(d.col,0.2);
+        ctx.beginPath();ctx.ellipse(cx-d.size*0.25,cy-d,.15*d.size,d.size*0.3,d.size*0.15,d.phase*0.2,0,Math.PI*2);ctx.fill();
+      } else if(d.type==='crystal_deco'){
+        // Glowing abyss crystals
+        const gA=(Math.sin(t*1.5+d.phase)*0.3+0.7)*0.8;
+        ctx.globalAlpha=gA;
+        ctx.fillStyle=d.col;
+        // Crystal spike shape
+        ctx.beginPath();
+        ctx.moveTo(cx,cy-d.size);ctx.lineTo(cx+d.size*0.3,cy);ctx.lineTo(cx,cy+d.size*0.2);
+        ctx.lineTo(cx-d.size*0.3,cy);ctx.closePath();ctx.fill();
+        ctx.globalAlpha=gA*0.3;
+        ctx.beginPath();ctx.arc(cx,cy-d.size*0.4,d.size*0.7,0,Math.PI*2);ctx.fill();
+        ctx.globalAlpha=1;
+      }
+      ctx.restore();
+    });
+  }
+
+  function drawWaves(baseY,t){
+    const camOff=camX*0.006;
     ctx.strokeStyle='rgba(255,255,255,0.07)';ctx.lineWidth=1.5;
-    for(let w=0;w<4;w++){
+    for(let w=0;w<5;w++){
       ctx.beginPath();
-      for(let x=0;x<W;x+=4){
-        const y=baseY+18+w*22+Math.sin((x/80)+t+w+camOff)*5;
+      for(let x=0;x<W;x+=5){
+        const y=baseY+14+w*18+Math.sin((x/70)+t*1.1+w+camOff)*4.5;
         x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
       }
       ctx.stroke();
     }
+    // White foam at waterline
+    ctx.strokeStyle='rgba(255,255,255,0.12)';ctx.lineWidth=2;
+    ctx.beginPath();
+    for(let x=0;x<W;x+=5){
+      const y=baseY+2+Math.sin((x/45)+t*1.8+camOff)*2;
+      x===0?ctx.moveTo(x,y):ctx.lineTo(x,y);
+    }
+    ctx.stroke();
   }
 
-  function drawBoat(cx,waterlineY){
-    const bw=bW, bh=bH;
+  function drawBoat(cx, waterlineY){
+    const bt=getBoat();
+    const bw=bt.w, bh=bt.h;
     ctx.save();
-    const bob=Math.sin(Date.now()/600)*2;
-    // Boat hull sits ON the waterline (slightly lower than before)
+    const bob=Math.sin(Date.now()/600)*1.8;
     ctx.translate(cx, waterlineY+bob);
-    // Flip horizontally based on travel direction
     ctx.scale(bFacing,1);
 
-    // Hull
-    ctx.fillStyle='#8b5e3c';
+    // Hull shadow
+    ctx.fillStyle='rgba(0,0,0,0.18)';
+    ctx.beginPath();ctx.ellipse(0,bh*0.7,bw*0.55,8,0,0,Math.PI*2);ctx.fill();
+
+    // Hull body
+    ctx.fillStyle=bt.hull;
     ctx.beginPath();
-    ctx.moveTo(-bw/2,-bh/4);
-    ctx.lineTo(bw/2,-bh/4);
-    ctx.lineTo(bw/2*0.85,bh*0.55);
-    ctx.lineTo(-bw/2*0.85,bh*0.55);
-    ctx.closePath();ctx.fill();
+    ctx.moveTo(-bw/2,-bh/4);ctx.lineTo(bw/2,-bh/4);
+    ctx.lineTo(bw/2*0.82,bh*0.58);ctx.lineTo(-bw/2*0.82,bh*0.58);ctx.closePath();ctx.fill();
 
     // Hull highlight
-    ctx.fillStyle='#a07050';
-    ctx.beginPath();
-    ctx.moveTo(-bw/2,-bh/4);
-    ctx.lineTo(bw/2,-bh/4);
-    ctx.lineTo(bw/2,-bh/4+5);
-    ctx.lineTo(-bw/2,-bh/4+5);
-    ctx.closePath();ctx.fill();
+    ctx.fillStyle=lighten(bt.hull,0.25);
+    ctx.beginPath();ctx.moveTo(-bw/2,-bh/4);ctx.lineTo(bw/2,-bh/4);
+    ctx.lineTo(bw/2,-bh/4+5);ctx.lineTo(-bw/2,-bh/4+5);ctx.closePath();ctx.fill();
 
     // Plank lines
     ctx.strokeStyle='rgba(0,0,0,0.2)';ctx.lineWidth=1;
-    for(let i=1;i<4;i++){
-      ctx.beginPath();
-      ctx.moveTo(-bw/2+i*(bw/4),-bh/4);
-      ctx.lineTo(-bw/2+i*(bw/4),bh*0.45);
-      ctx.stroke();
+    for(let i=1;i<Math.ceil(bw/22);i++){
+      const px=-bw/2+i*(bw/Math.ceil(bw/22));
+      ctx.beginPath();ctx.moveTo(px,-bh/4);ctx.lineTo(px,bh*0.45);ctx.stroke();
     }
 
     // Mast
-    ctx.strokeStyle='#6b4423';ctx.lineWidth=3;
-    ctx.beginPath();ctx.moveTo(0,-bh/4);ctx.lineTo(0,-bh/4-48);ctx.stroke();
+    ctx.strokeStyle=darken(bt.hull,0.4);ctx.lineWidth=3;
+    ctx.beginPath();ctx.moveTo(bw*0.05,-bh/4);ctx.lineTo(bw*0.05,-bh/4-52);ctx.stroke();
 
-    // Sail
-    ctx.fillStyle='rgba(240,235,220,0.9)';
-    ctx.beginPath();
-    ctx.moveTo(0,-bh/4-46);
-    ctx.lineTo(bw*0.6,-bh/4-18);
-    ctx.lineTo(0,-bh/4-6);
-    ctx.closePath();ctx.fill();
-    ctx.strokeStyle='rgba(0,0,0,0.15)';ctx.lineWidth=1;ctx.stroke();
+    // Sail(s) — galleon and schooner get two
+    const sails=bt.id==='galleon'||bt.id==='schooner'?2:1;
+    for(let s=0;s<sails;s++){
+      const sx=s===0?0:bw*0.28;
+      ctx.fillStyle=bt.sail;
+      ctx.beginPath();
+      ctx.moveTo(bw*0.05+sx,-bh/4-50+s*8);
+      ctx.lineTo(bw*0.05+sx+bw*(s===0?0.55:0.38),-bh/4-20+s*8);
+      ctx.lineTo(bw*0.05+sx,-bh/4-5+s*8);
+      ctx.closePath();ctx.fill();
+      ctx.strokeStyle='rgba(0,0,0,0.12)';ctx.lineWidth=1;ctx.stroke();
+      // Sail seams
+      ctx.strokeStyle='rgba(0,0,0,0.08)';ctx.lineWidth=0.8;
+      for(let l=1;l<3;l++){
+        ctx.beginPath();
+        ctx.moveTo(bw*0.05+sx,-bh/4-50+s*8+l*(45-s*8)/3);
+        ctx.lineTo(bw*0.05+sx+bw*(s===0?0.55:0.38)*(l/3),-bh/4-20+s*8+l*(15)/3);
+        ctx.stroke();
+      }
+    }
 
     // Angler
     ctx.fillStyle='#5c3a1e';
-    ctx.beginPath();ctx.ellipse(-bw*0.1,-bh/4-13,7,9,0,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.ellipse(-bw*0.12,-bh/4-13,6,8,0,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#e8b878';
-    ctx.beginPath();ctx.arc(-bw*0.1,-bh/4-19,5,0,Math.PI*2);ctx.fill();
+    ctx.beginPath();ctx.arc(-bw*0.12,-bh/4-19,5,0,Math.PI*2);ctx.fill();
     ctx.fillStyle='#3a2810';
-    ctx.beginPath();ctx.ellipse(-bw*0.1,-bh/4-24,7,3.5,0,0,Math.PI);ctx.fill();
-    ctx.fillRect(-bw*0.1-8,-bh/4-29,16,6);
-
-    // Rod when hook active
+    ctx.beginPath();ctx.ellipse(-bw*0.12,-bh/4-23,7,3,0,0,Math.PI);ctx.fill();
+    ctx.fillRect(-bw*0.12-7,-bh/4-27,14,5);
+    // Rod arm
     if(hookActive){
       ctx.strokeStyle='#6b4423';ctx.lineWidth=2.5;
-      ctx.beginPath();ctx.moveTo(-bw*0.1+6,-bh/4-21);ctx.lineTo(-bw*0.1+14,-bh/4-9);ctx.stroke();
+      ctx.beginPath();ctx.moveTo(-bw*0.08,-bh/4-20);ctx.lineTo(-bw*0.04+10,-bh/4-9);ctx.stroke();
     }
 
     ctx.restore();
@@ -1499,49 +1745,30 @@ const OC = (function(){
 
   function drawPalmTree(ctx,x,y){
     ctx.strokeStyle='#7a5530';ctx.lineWidth=5;
-    ctx.beginPath();
-    ctx.moveTo(x,y+50);
-    ctx.quadraticCurveTo(x+5,y+25,x+8,y);
-    ctx.stroke();
-    // Leaves
+    ctx.beginPath();ctx.moveTo(x,y+50);ctx.quadraticCurveTo(x+5,y+25,x+8,y);ctx.stroke();
     const lc=['#2d7a20','#3a9028','#258018'];
     [[0,-14,20,10],[25,-8,16,8],[-22,-6,16,8],[10,-22,14,7],[-8,-20,14,7]].forEach(([dx,dy,lw,lh],i)=>{
-      ctx.fillStyle=lc[i%3];
-      ctx.beginPath();
-      ctx.ellipse(x+8+dx,y+dy,lw,lh,Math.atan2(dy,-dx),0,Math.PI*2);
-      ctx.fill();
+      ctx.fillStyle=lc[i%3];ctx.beginPath();
+      ctx.ellipse(x+8+dx,y+dy,lw,lh,Math.atan2(dy,-dx),0,Math.PI*2);ctx.fill();
     });
-    // Coconuts
     ctx.fillStyle='#7a5030';
     [[4,-6],[10,-2],[-2,-2]].forEach(([dx,dy])=>{ctx.beginPath();ctx.arc(x+8+dx,y+dy,3,0,Math.PI*2);ctx.fill();});
   }
 
   function drawFishSprite(ctx,x,y,size,sp,mod){
-    ctx.save();
-    ctx.translate(x,y);
+    ctx.save();ctx.translate(x,y);
     const bodyCol=mod&&MOD_TINT[mod.id]?blendCol(sp.body,MOD_TINT[mod.id],0.45):sp.body;
     const finCol=mod&&MOD_TINT[mod.id]?blendCol(sp.fin,MOD_TINT[mod.id],0.35):sp.fin;
-
     if(sp.shape==='slim'||sp.shape==='round'||sp.shape==='marlin'){
-      const xscale=sp.shape==='slim'?1.6:sp.shape==='marlin'?2.0:1.2;
-      // Body
-      ctx.fillStyle=bodyCol;
-      ctx.beginPath();ctx.ellipse(0,0,size*xscale*0.5,size*0.38,0,0,Math.PI*2);ctx.fill();
-      // Tail
-      ctx.fillStyle=finCol;
-      ctx.beginPath();ctx.moveTo(-size*xscale*0.45,0);ctx.lineTo(-size*0.8,-size*0.3);ctx.lineTo(-size*0.8,size*0.3);ctx.closePath();ctx.fill();
-      // Dorsal fin
-      ctx.fillStyle=finCol;
-      ctx.beginPath();ctx.moveTo(0,-size*0.3);ctx.lineTo(size*0.2,-size*0.6);ctx.lineTo(size*0.35,-size*0.3);ctx.closePath();ctx.fill();
-      // Eye
-      ctx.fillStyle=sp.eye||'#fff';ctx.beginPath();ctx.arc(size*xscale*0.28,0,size*0.1,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#000';ctx.beginPath();ctx.arc(size*xscale*0.3,0,size*0.055,0,Math.PI*2);ctx.fill();
-      // Marlin spike
+      const xs=sp.shape==='slim'?1.6:sp.shape==='marlin'?2.0:1.2;
+      ctx.fillStyle=bodyCol;ctx.beginPath();ctx.ellipse(0,0,size*xs*0.5,size*0.38,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=finCol;ctx.beginPath();ctx.moveTo(-size*xs*0.45,0);ctx.lineTo(-size*0.8,-size*0.3);ctx.lineTo(-size*0.8,size*0.3);ctx.closePath();ctx.fill();
+      ctx.fillStyle=finCol;ctx.beginPath();ctx.moveTo(0,-size*0.3);ctx.lineTo(size*0.2,-size*0.6);ctx.lineTo(size*0.35,-size*0.3);ctx.closePath();ctx.fill();
+      ctx.fillStyle=sp.eye||'#fff';ctx.beginPath();ctx.arc(size*xs*0.28,0,size*0.1,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle='#000';ctx.beginPath();ctx.arc(size*xs*0.3,0,size*0.055,0,Math.PI*2);ctx.fill();
       if(sp.shape==='marlin'){ctx.strokeStyle=finCol;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(size*0.9,0);ctx.lineTo(size*1.5,-size*0.1);ctx.stroke();}
     } else if(sp.shape==='ray'){
-      ctx.fillStyle=bodyCol;
-      ctx.beginPath();ctx.ellipse(0,0,size*0.8,size*0.35,0,0,Math.PI*2);ctx.fill();
-      // Wings
+      ctx.fillStyle=bodyCol;ctx.beginPath();ctx.ellipse(0,0,size*0.8,size*0.35,0,0,Math.PI*2);ctx.fill();
       ctx.fillStyle=finCol;
       ctx.beginPath();ctx.moveTo(0,-size*0.2);ctx.lineTo(-size*0.6,-size*0.6);ctx.lineTo(-size*0.3,-size*0.1);ctx.closePath();ctx.fill();
       ctx.beginPath();ctx.moveTo(0,size*0.2);ctx.lineTo(-size*0.6,size*0.6);ctx.lineTo(-size*0.3,size*0.1);ctx.closePath();ctx.fill();
@@ -1558,9 +1785,8 @@ const OC = (function(){
       for(let t=0;t<4;t++){ctx.beginPath();ctx.moveTo(-size*0.2+t*(size*0.14),size*0.15);ctx.lineTo(-size*0.25+t*(size*0.16),size*0.55);ctx.stroke();}
     } else if(sp.shape==='whale'){
       ctx.fillStyle=bodyCol;ctx.beginPath();ctx.ellipse(0,0,size*1.2,size*0.5,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle=finCol;
-      ctx.beginPath();ctx.moveTo(-size*1.0,0);ctx.lineTo(-size*1.3,-size*0.4);ctx.lineTo(-size*1.3,size*0.4);ctx.closePath();ctx.fill();
-      ctx.fillStyle='rgba(255,255,255,0.6)';ctx.beginPath();ctx.ellipse(-size*0.1,size*0.1,size*0.5,size*0.25,0,0,Math.PI*2);ctx.fill();
+      ctx.fillStyle=finCol;ctx.beginPath();ctx.moveTo(-size*1.0,0);ctx.lineTo(-size*1.3,-size*0.4);ctx.lineTo(-size*1.3,size*0.4);ctx.closePath();ctx.fill();
+      ctx.fillStyle='rgba(255,255,255,0.55)';ctx.beginPath();ctx.ellipse(-size*0.1,size*0.1,size*0.48,size*0.24,0,0,Math.PI*2);ctx.fill();
       ctx.fillStyle=sp.eye;ctx.beginPath();ctx.arc(size*0.7,-size*0.1,size*0.1,0,Math.PI*2);ctx.fill();
     } else if(sp.shape==='kraken'){
       ctx.fillStyle=bodyCol;ctx.beginPath();ctx.ellipse(0,-size*0.1,size*0.45,size*0.5,0,0,Math.PI*2);ctx.fill();
@@ -1568,19 +1794,15 @@ const OC = (function(){
         const a=(t/6)*Math.PI*2;
         ctx.strokeStyle=finCol;ctx.lineWidth=size*0.18;ctx.lineCap='round';
         ctx.beginPath();ctx.moveTo(Math.cos(a)*size*0.3,size*0.2+Math.sin(a)*size*0.2);
-        ctx.quadraticCurveTo(Math.cos(a)*size*0.7,size*0.5,Math.cos(a)*size*0.9,size*0.8+Math.sin(a)*size*0.3);
-        ctx.stroke();
+        ctx.quadraticCurveTo(Math.cos(a)*size*0.7,size*0.5,Math.cos(a)*size*0.9,size*0.8+Math.sin(a)*size*0.3);ctx.stroke();
       }
       ctx.fillStyle=sp.eye;ctx.beginPath();ctx.arc(-size*0.15,-size*0.15,size*0.13,0,Math.PI*2);ctx.fill();
       ctx.beginPath();ctx.arc(size*0.15,-size*0.15,size*0.13,0,Math.PI*2);ctx.fill();
       ctx.fillStyle='#000';ctx.beginPath();ctx.arc(-size*0.15,-size*0.15,size*0.07,0,Math.PI*2);ctx.fill();
       ctx.beginPath();ctx.arc(size*0.15,-size*0.15,size*0.07,0,Math.PI*2);ctx.fill();
     }
-
-    // Modifier badge
     if(mod){
-      ctx.font=`${Math.max(8,size*0.5)}px serif`;
-      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.font=`${Math.max(8,size*0.5)}px serif`;ctx.textAlign='center';ctx.textBaseline='middle';
       ctx.fillText(mod.em,size*0.5,-size*0.7);
     }
     ctx.restore();
@@ -1588,106 +1810,77 @@ const OC = (function(){
 
   function blendCol(hex1,hex2,t){
     const p=n=>{const h=n.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];};
-    const [r1,g1,b1]=p(hex1); const [r2,g2,b2]=p(hex2);
+    const[r1,g1,b1]=p(hex1);const[r2,g2,b2]=p(hex2);
     const r=Math.round(r1+(r2-r1)*t),g=Math.round(g1+(g2-g1)*t),b=Math.round(b1+(b2-b1)*t);
     return `#${r.toString(16).padStart(2,'0')}${g.toString(16).padStart(2,'0')}${b.toString(16).padStart(2,'0')}`;
   }
 
   let _msgTO=null;
   function showOceanMsg(msg,dur){
-    const el=document.getElementById('oc-zone-lbl');
-    if(!el) return;
-    const prev=document.getElementById('oc-dist').parentElement;
-    // Show as a banner below HUD
     let mb=document.getElementById('oc-msg-bar');
     if(!mb){
-      mb=document.createElement('div');
-      mb.id='oc-msg-bar';
-      mb.style.cssText='position:absolute;top:50px;left:50%;transform:translateX(-50%);background:rgba(10,20,40,.85);border:1px solid rgba(100,180,255,.4);border-radius:8px;padding:5px 16px;font-size:13px;color:#f0e090;font-family:Nunito,sans-serif;font-weight:700;z-index:7;white-space:nowrap;pointer-events:none;';
+      mb=document.createElement('div');mb.id='oc-msg-bar';
+      mb.style.cssText='position:absolute;top:50px;left:50%;transform:translateX(-50%);background:rgba(10,20,40,.88);border:1px solid rgba(100,180,255,.4);border-radius:8px;padding:5px 18px;font-size:13px;color:#f0e090;font-family:Nunito,sans-serif;font-weight:700;z-index:7;white-space:nowrap;pointer-events:none;';
       document.getElementById('gc').appendChild(mb);
     }
-    mb.textContent=msg;
-    mb.style.display='block';
+    mb.textContent=msg;mb.style.display='block';
     clearTimeout(_msgTO);
-    if(dur>0) _msgTO=setTimeout(()=>{mb.style.display='none';},dur);
+    if(dur>0)_msgTO=setTimeout(()=>{mb.style.display='none';},dur);
   }
 
-  // ── charge cast ────────────────────────────────
   function startCharge(){
-    if(hookActive){toast('⚓ Hook already in water!');return;}
-    charging=true; chargeTimer=0;
-    function step(){
-      if(!charging){chargeRAF=null;return;}
-      chargeTimer=Math.min(1,chargeTimer+0.016);
-      chargeRAF=requestAnimationFrame(step);
-    }
+    if(hookActive){toast('⚓ Already fishing!');return;}
+    charging=true;chargeTimer=0;
+    function step(){if(!charging){chargeRAF=null;return;}chargeTimer=Math.min(1,chargeTimer+0.016);chargeRAF=requestAnimationFrame(step);}
     chargeRAF=requestAnimationFrame(step);
   }
-
   function releaseCharge(){
     if(!charging)return;
     charging=false;
     if(chargeRAF){cancelAnimationFrame(chargeRAF);chargeRAF=null;}
-    const power=Math.max(0.1,chargeTimer);
-    castHook(power);
+    castHook(Math.max(0.1,chargeTimer));
     chargeTimer=0;
   }
-
   function castHook(power){
     if(hookActive)return;
-    const dist=getRodCastDist()*power;        // world-unit cast distance
+    const dist=getRodCastDist()*power;
     hookArcStartX=bWorldX;
-    hookArcEndX=Math.min(WORLD_MAX, bWorldX+bFacing*dist);
-    hookArcDuration=Math.max(25,Math.round(dist/3));
-    hookArcT=0;
-    hWorldX=bWorldX;
-    hCanvasY=H*0.30-10;
-    hVxWorld=0;
-    hookActive=true; hookLanded=false; hookDepthPx=0;
-    hookedFish=null; hookedMod=null; hookFlash=0; hookBobble=0;
-    hookLeft=false; hookRight=false;
-    showOceanMsg('⚡ Casting... ('+Math.round(dist)+'m)',600);
+    hookArcEndX=Math.min(WORLD_MAX,bWorldX+bFacing*dist);
+    hookArcDuration=Math.max(25,Math.round(dist/3.5));
+    hookArcT=0;hWorldX=bWorldX;hCanvasY=wY()-10;hVxWorld=0;
+    hookActive=true;hookLanded=false;hookDepthPx=0;
+    hookedFish=null;hookedMod=null;hookFlash=0;hookBobble=0;
+    hookLeft=false;hookRight=false;hookedAmbientIdx=-1;
+    baitGlow=1;
+    showOceanMsg('⚡ Casting… ('+Math.round(dist)+'wu)',500);
   }
+  function onWheel(e){e.preventDefault();zoom=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,zoom+(e.deltaY>0?-0.13:0.13)));}
 
-  // ── zoom ───────────────────────────────────────
-  function onWheel(e){
-    e.preventDefault();
-    const delta=e.deltaY>0?-0.12:0.12;
-    zoom=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,zoom+delta));
-  }
-
-  // ── public API ────────────────────────────────
+  // ── public API ──────────────────────────────────
   return {
     enter(){
-      if(!G.upg.boat){toast('⚠️ You need a Rowboat first! Buy one in the Shop.');return;}
+      if(!G.upg.boat){toast('⚠️ Need a Rowboat — buy in Shop.');return;}
       active=true;
-      cv=document.getElementById('oc');
-      ctx=cv.getContext('2d');
+      cv=document.getElementById('oc');ctx=cv.getContext('2d');
       const gc=document.getElementById('gc');
-      cv.width=gc.offsetWidth||800; cv.height=gc.offsetHeight||500;
+      cv.width=gc.offsetWidth||800;cv.height=gc.offsetHeight||500;
       cv.style.display='block';
       document.getElementById('ocean-hud').style.display='block';
       document.getElementById('ocean-controls').style.display='flex';
       document.getElementById('castbtn').closest('#fov').style.display='none';
-      bWorldX=SHORE_X+30; bVx=0; bFacing=1;
-      hookActive=false; hookLanded=false;
-      hookedFish=null; hookedMod=null;
-      chargeTimer=0; charging=false;
-      zoom=1.0; camX=0;
-      oceanBag=[];
-      spawnAmbient();
-      toast('🚢 Hold ⚓ to charge cast! Scroll/pinch to zoom!');
+      bWorldX=SHORE_X+30;bVx=0;bFacing=1;
+      hookActive=false;hookLanded=false;
+      hookedFish=null;hookedMod=null;chargeTimer=0;charging=false;
+      zoom=1.0;camX=0;oceanBag=[];
+      spawnLiveFish();spawnZoneDeco();
+      toast('🚢 Hold ⚓ to charge cast! Steer bait with ◀▶. Scroll/pinch to zoom.');
       SFX.play('cast');
       raf=requestAnimationFrame(tick);
       cv.addEventListener('wheel',onWheel,{passive:false});
     },
-
     exit(){
-      const atShore=bWorldX<=SHORE_X+120;
-      if(oceanBag.length>0&&!atShore){
-        toast('⚠️ Sail back to shore first to unload '+oceanBag.length+' fish!');
-        return; // Don't exit
-      }
+      const atShore=bWorldX<=SHORE_X+140;
+      if(oceanBag.length>0&&!atShore){toast('⚠️ Sail back to shore to unload '+oceanBag.length+' fish!');return;}
       active=false;
       if(raf){cancelAnimationFrame(raf);raf=null;}
       if(chargeRAF){cancelAnimationFrame(chargeRAF);chargeRAF=null;}
@@ -1698,76 +1891,92 @@ const OC = (function(){
       document.getElementById('ocean-controls').style.display='none';
       document.getElementById('ocean-hook-controls').style.display='none';
       document.getElementById('castbtn').closest('#fov').style.display='';
-      const mb=document.getElementById('oc-msg-bar');
-      if(mb)mb.style.display='none';
-      // Unload ocean bag into main bag
+      const mb=document.getElementById('oc-msg-bar');if(mb)mb.style.display='none';
       if(oceanBag.length>0){
         const tot=oceanBag.reduce((s,e)=>s+e.p,0);
         oceanBag.forEach(e=>G.bag.push(e));
-        const cnt=oceanBag.length;
-        oceanBag=[];
-        toast('🏠 Returned to shore! '+cnt+' fish worth '+tot+'🪙 added to bag!');
-        updateUI(); renderBag();
-      } else {
-        toast('🏠 Returned to shore.');
-      }
+        const cnt=oceanBag.length;oceanBag=[];
+        toast('🏠 Returned! '+cnt+' fish ('+tot+'🪙) added to bag.');
+        updateUI();renderBag();
+      } else {toast('🏠 Returned to shore.');}
     },
-
-    resize(){
-      if(!active||!cv)return;
-      const gc=document.getElementById('gc');
-      cv.width=gc.offsetWidth||800; cv.height=gc.offsetHeight||500;
-      spawnAmbient();
-    },
-
-    keyDown(k){ keys[k]=true; },
-    keyUp(k){ keys[k]=false; },
-    hookKey(dir,down){ if(dir==='left')hookLeft=down; else hookRight=down; },
-
-    startCharge(){ startCharge(); },
-    releaseCharge(){ releaseCharge(); },
-    adjustZoom(delta){ zoom=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,zoom+delta)); },
-
-    dropHook(){
-      // Quick cast (min charge)
-      if(hookActive){toast('Hook already in water!');return;}
-      castHook(0.5);
-    },
-
+    resize(){if(!active||!cv)return;const gc=document.getElementById('gc');cv.width=gc.offsetWidth||800;cv.height=gc.offsetHeight||500;spawnLiveFish();spawnZoneDeco();},
+    keyDown(k){keys[k]=true;},
+    keyUp(k){keys[k]=false;},
+    hookKey(dir,down){if(dir==='left')hookLeft=down;else hookRight=down;},
+    startCharge(){startCharge();},
+    releaseCharge(){releaseCharge();},
+    adjustZoom(delta){zoom=Math.max(MIN_ZOOM,Math.min(MAX_ZOOM,zoom+delta));},
+    dropHook(){if(hookActive){toast('Already fishing!');return;}castHook(0.5);},
     reelHook(){
       if(!hookActive)return;
       if(hookedFish){
-        const fish=hookedFish, mod=hookedMod;
-        hookedFish=null; hookedMod=null; hookActive=false; hookLanded=false;
+        const fish=hookedFish,mod=hookedMod;
+        hookedFish=null;hookedMod=null;hookActive=false;hookLanded=false;
+        if(hookedAmbientIdx>=0&&liveFish[hookedAmbientIdx]){
+          // Remove caught fish from live pool & spawn replacement
+          liveFish.splice(hookedAmbientIdx,1);hookedAmbientIdx=-1;
+        }
         document.getElementById('ocean-hook-controls').style.display='none';
-        const mb=document.getElementById('oc-msg-bar');
-        if(mb)mb.style.display='none';
+        const mb=document.getElementById('oc-msg-bar');if(mb)mb.style.display='none';
         const rod=RODS.find(r=>r.id===G.rod);
         const lm=G.luckTimer>0?1.5:1;
         let w=+(fish.mn+Math.random()*(fish.mx-fish.mn)).toFixed(2);
         let p=Math.round(fish.price*w*(1+rod.lk*.04)*lm*(0.85+Math.random()*.3));
         if(mod){w=+(w*mod.wMult).toFixed(2);p=Math.round(p*mod.pMult);}
-        curFish=fish; curFish._w=w; curFish._p=p; curFish._mod=mod;
+        curFish=fish;curFish._w=w;curFish._p=p;curFish._mod=mod;
         if(!G.disc[fish.id])G.disc[fish.id]={best:0,count:0,mods:{}};
         G.disc[fish.id].count++;
         if(w>G.disc[fish.id].best)G.disc[fish.id].best=w;
         if(mod){if(!G.disc[fish.id].mods)G.disc[fish.id].mods={};G.disc[fish.id].mods[mod.id]=(G.disc[fish.id].mods[mod.id]||0)+1;G.discoveredMods[mod.id]=true;}
-        G.caught++; G.streak++;
-        addSplash(wToC(hWorldX),hCanvasY,15);
+        G.caught++;G.streak++;
+        addSplash(wToC(hWorldX),hCanvasY,16);
         SFX.playCatch(fish.rar);
-        // Store in ocean bag — only unloads at shore
         oceanBag.push({id:fish.id,w,p,mod:mod?.id||null});
-        showOceanMsg('🐟 Caught '+fish.name+'! Sail to shore to sell. ('+oceanBag.length+' in hold)',3500);
-        buildComp(); updateUI();
+        showOceanMsg('🐟 '+fish.name+'! Hold: '+oceanBag.length+' fish',3200);
+        buildComp();updateUI();
+        // Spawn a replacement fish elsewhere after a delay
+        setTimeout(()=>{if(active)spawnSingleFish(fish.id);},8000);
       } else {
-        hookActive=false; hookLanded=false;
+        hookActive=false;hookLanded=false;
         document.getElementById('ocean-hook-controls').style.display='none';
         addSplash(wToC(hWorldX),hCanvasY);
-        SFX.play('miss');
-        showOceanMsg('Nothing on the hook.',1800);
+        SFX.play('miss');showOceanMsg('Nothing on the hook.',1800);
       }
     },
+    // Boat upgrades
+    getBoats(){ return BOATS; },
+    getCurrentBoatId(){ return getBoat().id; },
+    buyBoat(id){
+      const idx=BOATS.findIndex(b=>b.id===id);
+      if(idx<0) return;
+      const bt=BOATS[idx];
+      if(G.gold<bt.price){toast('Not enough gold! Need '+bt.price+'🪙');return;}
+      G.gold-=bt.price;currentBoat=idx;
+      SFX.play('buy');toast('⛵ Got the '+bt.name+'!');updateUI();
+    },
+    isActive(){ return active; },
   };
+
+  function spawnSingleFish(fishId){
+    const z=getZone();
+    const pool=ZONE_FISH[z.id]||ZONE_FISH.coastal;
+    const entry=pool.find(e=>e.id===fishId)||pool[Math.floor(Math.random()*pool.length)];
+    const fishDef=FISH.find(f=>f.id===entry.id);
+    if(!fishDef) return;
+    const sp=SPRITES[entry.id]||{body:'#5090a0',fin:'#305870',eye:'#fff',shape:'round'};
+    const worldSpan=WORLD_MAX-SHORE_X;
+    liveFish.push({
+      worldX: SHORE_X+100+Math.random()*worldSpan*0.9,
+      depthFrac: entry.dMin+Math.random()*(entry.dMax-entry.dMin),
+      vx:(Math.random()<0.5?-1:1)*(0.3+Math.random()*0.9),
+      vy:0,size:10+fishDef.mx*0.12,
+      sp,fishId:entry.id,fishDef,
+      alpha:0.5+Math.random()*0.4,wobble:Math.random()*Math.PI*2,
+      facing:1,state:'wander',stateTimer:0,targetX:0,targetY:0,
+      mod:Math.random()<0.08?rollModifier():null,
+    });
+  }
 })();
 const SAVE_KEY='corner_pond_save';
 const SAVE_VERSION=1; // increment when schema changes; add migration below
@@ -3668,6 +3877,24 @@ function renderShop(){
       </div>
     </div>`;
   });
+  h+='<div class="shtit">⛵ BOATS (Ocean Mode)</div>';
+  if(OC.getBoats){
+    OC.getBoats().forEach(bt=>{
+      const isCurrent=OC.getCurrentBoatId()===bt.id;
+      const canBuy=bt.price>0&&G.upg.boat;
+      const alreadyOwned=bt.price===0||(G.upg.boat&&OC.getBoats().indexOf(bt)<=OC.getBoats().findIndex(b=>b.id===OC.getCurrentBoatId()));
+      h+=`<div class="shitem">
+        <div class="shin">⛵ ${bt.name}${isCurrent?' ✓':''}</div>
+        <div class="shde">${bt.desc} — Max range: ${Math.round((bt.maxX-80)/4)}m | Cast ×${bt.castMult}</div>
+        <div class="shbr"><span class="shp">${bt.price?bt.price+'🪙':'Free'}</span>
+          ${!G.upg.boat?'<span style="font-size:9px;color:var(--txm);">Need Rowboat upgrade first</span>':
+            isCurrent?'<span class="obadge">Active</span>':
+            alreadyOwned?`<button class="ebtn" onclick="OC.buyBoat('${bt.id}');renderShop()">Switch</button>`:
+            `<button class="bbuy" onclick="OC.buyBoat('${bt.id}');renderShop()" ${G.gold<bt.price?'disabled':''}>Buy ${bt.price}🪙</button>`}
+        </div>
+      </div>`;
+    });
+  }
   document.getElementById('shoplist').innerHTML=h;
 }
 function buyRod(id){const r=RODS.find(x=>x.id===id);if(G.gold<r.price){toast('Not enough gold!');return;}G.gold-=r.price;G.rods[id]=true;equipRod(id);SFX.play('buy');toast('🎣 Got '+r.name+'!');updateUI();renderShop();}
